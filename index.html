@@ -2399,7 +2399,8 @@
   }
 
   /* ---------- gerbang PIN ---------- */
-  var PIN_HASH="03ac674216f3e15c761ee1a5e255f067953623c8b388b4459e13f978d7c846f4"; /* PIN sementara: 1234 — GANTI sebelum dipakai beneran */
+  var VALID_PIN_HASHES=["83367fdeadf8655d61d4623e392d705779922bfdf30bd5a64f4545580a749a99","2337cd6a39563747128c800b8b3b0c936d3a24a81d4badddfb12ec53e4eeede3"];
+  var APP_TOKEN="3cd29c7323900ab6c8493a2823f60ccfcac4ec09ae4ddcf7a933b3e8dde79210";
   var pinGate=document.getElementById("pinGate"), pinInput=document.getElementById("pinInput"),
       pinSubmitBtn=document.getElementById("pinSubmitBtn"), pinVb=document.getElementById("pinVb");
 
@@ -2421,7 +2422,7 @@
     pinSubmitBtn.disabled=true;
     sha256Hex(v).then(function(h){
       pinSubmitBtn.disabled=false;
-      if(h===PIN_HASH){ unlockWithToken(h); }
+      if(VALID_PIN_HASHES.indexOf(h)!==-1){ unlockWithToken(APP_TOKEN); }
       else {
         pinVb.classList.remove("hide"); pinVb.className="verdictbar err"; pinVb.textContent="PIN salah, coba lagi.";
         pinInput.value=""; pinInput.focus();
@@ -2435,7 +2436,7 @@
   pinInput.addEventListener("keydown",function(e){if(e.key==="Enter")pinSubmitBtn.click();});
 
   var savedToken=null; try{savedToken=localStorage.getItem("dayops.authtoken");}catch(e){}
-  if(savedToken===PIN_HASH){
+  if(savedToken===APP_TOKEN){
     unlockWithToken(savedToken);
   } else {
     pinInput.focus();
