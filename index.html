@@ -1,0 +1,2447 @@
+<!doctype html>
+<html lang="id">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<style>body{margin:0;padding:0;background:#08090C;color:#E4E9F0}img{max-width:100%}[hidden]{display:none!important}</style>
+</head>
+<body>
+<title>Day Ops</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Chakra+Petch:wght@500;600;700&family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500&display=swap">
+
+<script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore-compat.js"></script>
+<script>
+  // GANTI 6 nilai di bawah ini dengan Firebase config asli (Firebase Console > Project settings > General > Your apps > SDK setup and configuration)
+  window.DAYOPS_FIREBASE_CONFIG = {
+    apiKey: "GANTI_apiKey",
+    authDomain: "GANTI_authDomain",
+    projectId: "GANTI_projectId",
+    storageBucket: "GANTI_storageBucket",
+    messagingSenderId: "GANTI_messagingSenderId",
+    appId: "GANTI_appId"
+  };
+  firebase.initializeApp(window.DAYOPS_FIREBASE_CONFIG);
+</script>
+<style>
+  :root{
+    color-scheme:dark;
+    --ground:#08090C;
+    --surface:#0F131A;
+    --surface-2:#141A23;
+    --line:#1A202B;
+    --line-bright:#242D3A;
+    --txt:#E4E9F0;
+    --txt-2:#6E7C8F;
+    --txt-3:#4A5566;
+    --accent:#00F0A0;
+    --accent-dim:#00F0A022;
+    --p1:#FF4D3D;
+    --p2:#FFB020;
+    --p3:#5A6675;
+    --mono:'IBM Plex Mono',ui-monospace,'SF Mono',Menlo,monospace;
+    --disp:'Chakra Petch','Segoe UI',system-ui,sans-serif;
+    --sans:'IBM Plex Sans',system-ui,-apple-system,sans-serif;
+    --r-lg:10px;
+    --r-sm:4px;
+  }
+  :root[data-role="istri"]{
+    --accent:#FF4FA0;
+    --accent-dim:#FF4FA022;
+  }
+
+  *{margin:0;padding:0;box-sizing:border-box}
+
+  body{
+    background:var(--ground);
+    color:var(--txt);
+    font-family:var(--sans);
+    line-height:1.55;
+    min-height:100vh;
+    background-image:
+      linear-gradient(var(--line) 1px,transparent 1px),
+      linear-gradient(90deg,var(--line) 1px,transparent 1px);
+    background-size:64px 64px;
+    background-position:-1px -1px;
+  }
+  .veil{position:fixed;inset:0;pointer-events:none;z-index:0;
+    background:radial-gradient(ellipse 80% 60% at 50% 0%,transparent 0%,var(--ground) 78%)}
+
+  .wrap{position:relative;z-index:1;max-width:1240px;margin:0 auto;padding:28px 24px 72px}
+
+  .masthead{display:flex;justify-content:space-between;align-items:flex-end;gap:24px;flex-wrap:wrap;
+    padding-bottom:20px;margin-bottom:24px;border-bottom:1px solid var(--line-bright)}
+  .brand h1{font-family:var(--disp);font-size:34px;font-weight:700;letter-spacing:.08em;
+    text-transform:uppercase;line-height:1}
+  .brand h1 span{color:var(--accent)}
+  .brand .sub{font-family:var(--mono);font-size:11px;letter-spacing:.22em;text-transform:uppercase;
+    color:var(--txt-3);margin-top:8px}
+  .resetrow{display:flex;gap:16px;margin-top:10px}
+  .reset-link{font-family:var(--mono);font-size:10px;letter-spacing:.14em;text-transform:uppercase;
+    color:var(--txt-3);background:none;border:none;padding:0;cursor:pointer}
+  .reset-link:hover{color:var(--p1)}
+  .clock{text-align:right}
+  .clock .t{font-family:var(--mono);font-size:44px;font-weight:500;line-height:1;
+    font-variant-numeric:tabular-nums;letter-spacing:-.01em}
+  .clock .t .sec{color:var(--accent);font-size:26px}
+  .clock .d{font-family:var(--mono);font-size:11px;letter-spacing:.18em;text-transform:uppercase;
+    color:var(--txt-2);margin-top:8px}
+
+  .strip{display:grid;grid-template-columns:repeat(auto-fit,minmax(178px,1fr));
+    border:1px solid var(--line-bright);background:var(--surface);margin-bottom:24px;border-radius:var(--r-lg)}
+  .cell{padding:16px 18px;border-right:1px solid var(--line);display:flex;flex-direction:column;gap:7px}
+  .cell:last-child{border-right:none}
+  .strip .cell:first-child{border-top-left-radius:var(--r-lg);border-bottom-left-radius:var(--r-lg)}
+  .strip .cell:last-child{border-top-right-radius:var(--r-lg);border-bottom-right-radius:var(--r-lg)}
+  .cell .k{font-family:var(--mono);font-size:10px;letter-spacing:.2em;text-transform:uppercase;color:var(--txt-3)}
+  .cell .v{font-family:var(--mono);font-size:19px;font-weight:500;font-variant-numeric:tabular-nums;
+    white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .cell .v.on{color:var(--accent)}
+  .cell .v.warn{color:var(--p1)}
+  .cell .n{font-size:12px;color:var(--txt-2);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .meter{height:3px;background:var(--line-bright);margin-top:2px;overflow:hidden}
+  .meter i{display:block;height:100%;background:var(--accent);width:0%;transition:width .6s cubic-bezier(.4,0,.2,1)}
+
+  .grid{display:grid;grid-template-columns:minmax(0,1.5fr) minmax(0,1fr);gap:24px;align-items:start}
+  @media(max-width:900px){.grid{grid-template-columns:1fr}}
+  .col{display:flex;flex-direction:column;gap:1px}
+
+  .tabs{display:flex;gap:2px;background:var(--line);border:1px solid var(--line-bright);
+    margin-bottom:16px;border-radius:var(--r-lg)}
+  .tab{flex:1;background:var(--surface);border:none;padding:12px 6px;
+    font-family:var(--mono);font-size:10px;font-weight:600;letter-spacing:.1em;text-transform:uppercase;
+    color:var(--txt-3);cursor:pointer;position:relative;transition:color .18s,background .18s,opacity .12s;
+    display:flex;align-items:center;justify-content:center;gap:6px}
+  .tab:first-child{border-top-left-radius:var(--r-lg);border-bottom-left-radius:var(--r-lg)}
+  .tab:last-child{border-top-right-radius:var(--r-lg);border-bottom-right-radius:var(--r-lg)}
+  .tab:hover{color:var(--txt-2)}
+  .tab:active{opacity:.65}
+  .tab.active{color:var(--accent);background:var(--surface-2)}
+  .tab.active::after{content:'';position:absolute;left:0;right:0;bottom:-1px;height:2px;background:var(--accent)}
+  .ticon{width:15px;height:15px;flex:0 0 auto}
+  .tlabel{display:inline-flex;align-items:center;gap:6px}
+  .tab .dot{display:inline-block;min-width:15px;padding:0 3px;border-radius:8px;
+    background:var(--line-bright);color:var(--txt-2);font-size:9px;line-height:15px;font-weight:600}
+  .tab.active .dot{background:var(--accent);color:#04140E}
+
+  .subtabs{display:flex;gap:2px;background:var(--line);border:1px solid var(--line-bright);
+    margin-bottom:16px;border-radius:var(--r-lg)}
+  .subtab{flex:1;background:var(--surface);border:none;padding:12px 6px;
+    font-family:var(--mono);font-size:10px;font-weight:600;letter-spacing:.1em;text-transform:uppercase;
+    color:var(--txt-3);cursor:pointer;position:relative;transition:color .18s,background .18s;
+    display:flex;align-items:center;justify-content:center;gap:6px}
+  .subtab:first-child{border-top-left-radius:var(--r-lg);border-bottom-left-radius:var(--r-lg)}
+  .subtab:last-child{border-top-right-radius:var(--r-lg);border-bottom-right-radius:var(--r-lg)}
+  .subtab:hover{color:var(--txt-2)}
+  .subtab.active{color:var(--accent);background:var(--surface-2)}
+  .subtab.active::after{content:'';position:absolute;left:0;right:0;bottom:-1px;height:2px;background:var(--accent)}
+  .subtab .dot{display:inline-block;min-width:15px;padding:0 3px;border-radius:8px;
+    background:var(--line-bright);color:var(--txt-2);font-size:9px;line-height:15px;font-weight:600}
+  .subtab.active .dot{background:var(--accent);color:#04140E}
+
+  .viewswitch{display:flex;gap:2px;background:var(--line);border:1px solid var(--line-bright);
+    border-radius:var(--r-lg);margin-bottom:20px;max-width:460px}
+  .viewswitch button{flex:1;background:var(--surface);border:none;padding:11px 10px;
+    font-family:var(--mono);font-size:11px;font-weight:600;letter-spacing:.1em;text-transform:uppercase;
+    color:var(--txt-3);cursor:pointer;transition:color .18s,background .18s;
+    display:flex;align-items:center;justify-content:center;gap:6px}
+  .viewswitch button:first-child{border-top-left-radius:var(--r-lg);border-bottom-left-radius:var(--r-lg)}
+  .viewswitch button:last-child{border-top-right-radius:var(--r-lg);border-bottom-right-radius:var(--r-lg)}
+  .viewswitch button.active{color:var(--accent);background:var(--surface-2)}
+  .viewswitch button .dot{display:inline-block;min-width:15px;padding:0 3px;border-radius:8px;
+    background:var(--line-bright);color:var(--txt-2);font-size:9px;line-height:15px;font-weight:600}
+  .viewswitch button.active .dot{background:var(--accent);color:#04140E}
+
+  .gate{position:fixed;inset:0;z-index:100;background:var(--ground);display:flex;
+    align-items:center;justify-content:center;padding:24px;
+    background-image:linear-gradient(var(--line) 1px,transparent 1px),linear-gradient(90deg,var(--line) 1px,transparent 1px);
+    background-size:64px 64px}
+  .gate.hide{display:none}
+  .gatecard{max-width:380px;width:100%;text-align:center}
+  .gatecard h1{font-family:var(--disp);font-size:30px;font-weight:700;letter-spacing:.06em;
+    text-transform:uppercase;margin-bottom:6px}
+  .gatecard h1 span{color:var(--accent)}
+  .gatecard .sub{font-family:var(--mono);font-size:11px;letter-spacing:.2em;text-transform:uppercase;
+    color:var(--txt-3);margin-bottom:32px}
+  .rolegrid{display:flex;flex-direction:column;gap:12px}
+  .rolebtn{padding:20px;border:1px solid var(--line-bright);background:var(--surface);border-radius:var(--r-lg);
+    color:var(--txt);font-family:var(--disp);font-size:16px;font-weight:600;letter-spacing:.04em;
+    cursor:pointer;transition:all .18s}
+  .rolebtn:hover{border-color:#00F0A0;color:#00F0A0}
+  .rolebtn.istri:hover{border-color:#FF4FA0;color:#FF4FA0}
+
+  .presence{position:fixed;right:16px;bottom:16px;z-index:40;width:236px;max-width:calc(100vw - 32px);
+    border:1px solid var(--line-bright);background:var(--surface);border-radius:var(--r-lg);
+    box-shadow:0 10px 32px -8px rgba(0,0,0,.6);overflow:hidden}
+  .presence.min .pbody{display:none}
+  .phead{display:flex;align-items:center;justify-content:space-between;padding:9px 12px;
+    border-bottom:1px solid var(--line);cursor:pointer;background:var(--surface-2)}
+  .presence.min .phead{border-bottom:none}
+  .phead span{font-family:var(--mono);font-size:10px;letter-spacing:.16em;text-transform:uppercase;color:var(--txt-3)}
+  .phead button{padding:2px 6px;font-size:10px;border:none;background:none;color:var(--txt-3)}
+  .pbody{padding:10px 12px;display:flex;flex-direction:column;gap:10px}
+  .prow{display:flex;gap:10px;align-items:center}
+  .pthumb{width:38px;height:38px;border-radius:50%;background:var(--surface-2);border:1px solid var(--line-bright);
+    flex:0 0 auto;object-fit:cover;display:flex;align-items:center;justify-content:center;font-size:15px;color:var(--txt-3)}
+  .pinfo{min-width:0;flex:1}
+  .pinfo .pname{font-family:var(--mono);font-size:10px;letter-spacing:.1em;text-transform:uppercase;color:var(--txt-3)}
+  .pinfo .pact{font-size:13px;font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .pinfo .pwhen{font-family:var(--mono);font-size:10px;color:var(--txt-3);margin-top:1px}
+
+  .modal{position:fixed;inset:0;z-index:90;background:rgba(4,6,9,.72);display:flex;
+    align-items:center;justify-content:center;padding:20px}
+  .modal.hide{display:none}
+  .modalcard{max-width:360px;width:100%;background:var(--surface);border:1px solid var(--line-bright);
+    border-radius:var(--r-lg);padding:20px}
+  .modalcard h3{font-family:var(--disp);font-size:16px;font-weight:600;margin-bottom:14px}
+  .photopick{display:flex;align-items:center;gap:12px;margin-top:12px}
+  .photopick .prev{width:56px;height:56px;border-radius:50%;object-fit:cover;background:var(--surface-2);
+    border:1px solid var(--line-bright)}
+
+  .li .amt.in{color:var(--accent)}
+  .li .amt.out{color:var(--p1)}
+
+  .panel{border:1px solid var(--line-bright);background:var(--surface);margin-bottom:24px;border-radius:var(--r-lg)}
+  .panel[data-tabpanel]{display:none;margin-bottom:0}
+  .panel > header{display:flex;justify-content:space-between;align-items:center;gap:12px;
+    padding:13px 18px;border-bottom:1px solid var(--line)}
+  .panel > header h2{font-family:var(--mono);font-size:11px;font-weight:600;letter-spacing:.22em;
+    text-transform:uppercase;color:var(--txt-2)}
+  .panel > header .tag{font-family:var(--mono);font-size:10px;letter-spacing:.14em;color:var(--txt-3)}
+  .panel .body{padding:18px}
+
+  .curfew{margin:14px 18px 0;border:1px solid var(--p1);background:#1a0f10;color:#ffb3ab;
+    padding:10px 14px;font-family:var(--mono);font-size:11.5px;letter-spacing:.03em;border-radius:var(--r-sm);
+    display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap}
+  .curfew.hide{display:none}
+  .curfew button{border-color:var(--p1);color:#ffb3ab;padding:6px 10px;font-size:10px}
+  .curfew button:hover{background:var(--p1);color:#1a0f10;border-color:var(--p1)}
+
+  .rail{position:relative;padding:18px 18px 18px 78px}
+  .rail::before{content:'';position:absolute;left:69px;top:0;bottom:0;width:1px;background:var(--line-bright)}
+
+  .blk{position:relative;display:flex;flex-direction:column;justify-content:center;gap:5px;
+    padding:12px 16px;border:1px solid var(--line-bright);background:var(--surface-2);border-radius:var(--r-sm);
+    margin-bottom:8px;transition:border-color .3s,background .3s,transform .12s}
+  .blk::before{content:'';position:absolute;left:-1px;top:-1px;bottom:-1px;width:2px;background:var(--p3)}
+  .blk[data-p="P1"]::before{background:var(--p1)}
+  .blk[data-p="P2"]::before{background:var(--p2)}
+  .blk[data-p="RITUAL"]::before,.blk[data-p="BUFFER"]::before,.blk[data-p="GAP"]::before{background:transparent}
+
+  .blk.pad{background:transparent;border-style:dashed;border-color:var(--line);opacity:.7}
+  .blk.done{opacity:.4}
+  .blk.now{border-color:var(--accent);background:#0D1A17;box-shadow:0 0 0 1px var(--accent-dim)}
+  .blk.clash{border-color:var(--p1)}
+  .blk[data-task="1"]:active{transform:scale(.99)}
+
+  .blk .stamp{position:absolute;left:-78px;top:12px;width:60px;text-align:right;
+    font-family:var(--mono);font-size:12px;font-variant-numeric:tabular-nums;color:var(--txt-2)}
+  .blk.now .stamp{color:var(--accent)}
+  .blk .stamp em{display:block;font-style:normal;font-size:10px;color:var(--txt-3);margin-top:2px}
+  .blk .node{position:absolute;left:-10px;top:16px;width:7px;height:7px;border-radius:50%;
+    background:var(--ground);border:1px solid var(--line-bright)}
+  .blk.now .node{background:var(--accent);border-color:var(--accent);animation:beat 2s ease-in-out infinite}
+  @keyframes beat{0%,100%{box-shadow:0 0 0 0 var(--accent-dim)}50%{box-shadow:0 0 0 6px transparent}}
+
+  .node.chk{width:16px;height:16px;left:-15px;top:10px;border-radius:5px;
+    background:var(--surface-2);border:1px solid var(--line-bright);
+    display:flex;align-items:center;justify-content:center;padding:0;
+    font-family:var(--mono);font-size:10px;font-weight:700;letter-spacing:0;
+    text-transform:none;color:transparent;cursor:pointer;transition:all .15s}
+  .node.chk:hover{border-color:var(--accent)}
+  .node.chk:active{transform:scale(.9)}
+  .node.chk.done{background:var(--accent);border-color:var(--accent);color:#04140E;animation:none}
+
+  .blk .name{font-family:var(--disp);font-size:16px;font-weight:600}
+  .blk.pad .name{font-family:var(--mono);font-size:12px;font-weight:400;letter-spacing:.1em;
+    text-transform:uppercase;color:var(--txt-3)}
+  .blk .meta{display:flex;align-items:center;gap:9px;flex-wrap:wrap}
+  .chip{font-family:var(--mono);font-size:10px;font-weight:500;letter-spacing:.14em;
+    padding:2px 7px;border:1px solid currentColor;color:var(--p3);border-radius:var(--r-sm)}
+  .chip.P1{color:var(--p1)}
+  .chip.P2{color:var(--p2)}
+  .chip.lock{color:var(--accent);border-style:dashed}
+  .chip.done{color:var(--accent);border-style:dashed}
+  .dur{font-family:var(--mono);font-size:11px;color:var(--txt-3);font-variant-numeric:tabular-nums}
+  .why{font-size:12.5px;color:var(--txt-2);line-height:1.5}
+
+  .playhead{position:absolute;left:52px;right:18px;height:1px;background:var(--accent);
+    z-index:5;pointer-events:none;transition:top .9s linear}
+  .playhead::after{content:attr(data-t);position:absolute;left:-52px;top:-8px;
+    font-family:var(--mono);font-size:11px;font-weight:600;color:var(--ground);
+    background:var(--accent);padding:1px 5px;font-variant-numeric:tabular-nums;border-radius:var(--r-sm)}
+  .playhead.off{display:none}
+
+  .fld{display:flex;flex-direction:column;gap:6px}
+  .fld label{font-family:var(--mono);font-size:10px;letter-spacing:.18em;text-transform:uppercase;color:var(--txt-3)}
+  .row{display:flex;gap:8px}
+  input,select,textarea{background:var(--ground);border:1px solid var(--line-bright);color:var(--txt);
+    padding:9px 11px;font-family:var(--mono);font-size:13px;width:100%;border-radius:var(--r-sm);
+    outline:none;transition:border-color .2s}
+  input::placeholder,textarea::placeholder{color:var(--txt-3)}
+  input:focus,select:focus,textarea:focus{border-color:var(--accent)}
+  select{cursor:pointer}
+  input[type=time],input[type=number]{font-variant-numeric:tabular-nums}
+  textarea{resize:vertical;font-family:var(--sans);font-size:13px;line-height:1.5;min-height:56px}
+
+  button{font-family:var(--mono);font-size:11px;font-weight:600;letter-spacing:.14em;text-transform:uppercase;
+    padding:9px 14px;border:1px solid var(--line-bright);background:transparent;color:var(--txt-2);border-radius:var(--r-sm);
+    cursor:pointer;transition:all .18s;white-space:nowrap}
+  button:hover:not(:disabled){border-color:var(--accent);color:var(--accent)}
+  button:active:not(:disabled){transform:scale(.97)}
+  button:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+  button:disabled{opacity:.4;cursor:not-allowed}
+  button.go{background:var(--accent);border-color:var(--accent);color:#04140E}
+  button.go:hover:not(:disabled){background:#3BFFBC;border-color:#3BFFBC;color:#04140E}
+  button.x{padding:5px 8px;font-size:10px;letter-spacing:.06em;color:var(--txt-3)}
+  button.x:hover{border-color:var(--p1);color:var(--p1)}
+  button.cyc{padding:4px 7px;font-size:10px;letter-spacing:.06em;min-width:34px}
+
+  .statusline{font-family:var(--mono);font-size:12.5px;color:var(--txt-2);line-height:1.6;margin-bottom:10px}
+  .statusline b{color:var(--accent);font-weight:600}
+
+  .divider{height:1px;background:var(--line-bright);margin:20px 0}
+  .ideabox label{font-family:var(--mono);font-size:10px;letter-spacing:.18em;text-transform:uppercase;
+    color:var(--txt-3);display:block;margin-bottom:8px}
+  .ideahint{font-family:var(--mono);font-size:10px;letter-spacing:.08em;color:var(--txt-3);
+    margin-top:6px;line-height:1.6}
+  .grouphead{font-family:var(--mono);font-size:10px;letter-spacing:.18em;text-transform:uppercase;
+    color:var(--txt-3);margin:18px 0 8px}
+  .grouphead:first-child{margin-top:0}
+  .grouphead b{color:var(--accent);font-weight:600}
+
+  .addgrid{display:grid;grid-template-columns:1fr;gap:8px;margin-bottom:8px}
+  .addgrid2{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:12px}
+
+  .list{display:flex;flex-direction:column;gap:1px;background:var(--line);border-radius:var(--r-lg)}
+  .li{display:flex;align-items:center;gap:9px;padding:10px 12px;background:var(--surface-2);transition:background .12s}
+  .li:first-child{border-top-left-radius:var(--r-lg);border-top-right-radius:var(--r-lg)}
+  .li:last-child{border-bottom-left-radius:var(--r-lg);border-bottom-right-radius:var(--r-lg)}
+  .li:active{background:var(--line-bright)}
+  .li .bar{width:2px;align-self:stretch;background:var(--p3)}
+  .li[data-p="P1"] .bar{background:var(--p1)}
+  .li[data-p="P2"] .bar{background:var(--p2)}
+  .li .nm{flex:1;font-size:13.5px;font-weight:500;min-width:0;
+    white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .li .lk{font-family:var(--mono);font-size:10px;color:var(--accent)}
+  .li .mm{font-family:var(--mono);font-size:11px;color:var(--txt-3);font-variant-numeric:tabular-nums}
+
+  .idea-item{background:var(--surface-2);border-bottom:1px solid var(--line);padding:11px 12px;transition:background .12s}
+  .idea-item:last-child{border-bottom:none}
+  .idea-item:active{background:var(--line-bright)}
+  .idea-item .itxt{font-size:13.5px;font-weight:500;margin-bottom:4px}
+  .idea-item .inote{font-size:12px;color:var(--txt-2);line-height:1.45;margin-bottom:9px}
+  .idea-item .irow{display:flex;gap:8px}
+
+  .dec{display:flex;flex-direction:column;gap:1px;background:var(--line);border-radius:var(--r-lg)}
+  .dr{display:flex;gap:11px;padding:11px 13px;background:var(--surface-2);align-items:flex-start}
+  .dr:first-child{border-top-left-radius:var(--r-lg);border-top-right-radius:var(--r-lg)}
+  .dr:last-child{border-bottom-left-radius:var(--r-lg);border-bottom-right-radius:var(--r-lg)}
+  .dr .vd{font-family:var(--mono);font-size:9px;font-weight:600;letter-spacing:.12em;
+    padding:3px 6px;border:1px solid currentColor;color:var(--txt-3);flex:0 0 auto;margin-top:1px;border-radius:var(--r-sm)}
+  .dr .vd.anchor{color:var(--accent)}
+  .dr .vd.fit{color:var(--p2)}
+  .dr .vd.push{color:var(--txt-2)}
+  .dr .vd.defer{color:var(--p3)}
+  .dr .vd.clash{color:var(--p1)}
+  .dr .vd.done{color:var(--txt-2)}
+  .dr .dx{min-width:0}
+  .dr .dn{font-size:13px;font-weight:500;margin-bottom:2px}
+  .dr .dw{font-size:12px;color:var(--txt-2);line-height:1.45}
+
+  .void{font-family:var(--mono);font-size:11px;letter-spacing:.12em;text-transform:uppercase;
+    color:var(--txt-3);padding:20px 0;text-align:center;background:var(--surface-2)}
+  .hint{font-family:var(--mono);font-size:10px;letter-spacing:.1em;color:var(--txt-3);margin-top:12px;line-height:1.7}
+
+  .verdictbar{border:1px solid var(--line-bright);border-left:2px solid var(--accent);border-radius:var(--r-sm);
+    background:var(--surface-2);padding:12px 14px;margin-top:14px;font-size:12.5px;color:var(--txt-2);line-height:1.5}
+  .verdictbar.hide{display:none}
+  .verdictbar b{color:var(--txt);font-weight:500}
+  .verdictbar.err{border-left-color:var(--p1)}
+
+  .postponebox{border:1px solid var(--line-bright);border-left:2px solid var(--p2);border-radius:var(--r-sm);
+    background:var(--surface-2);padding:14px;margin-top:14px}
+  .postponebox.hide{display:none}
+  .postponebox .ppname{font-family:var(--disp);font-size:15px;font-weight:600;margin-bottom:10px}
+
+  .stats-row{display:flex;gap:22px;margin-bottom:14px;flex-wrap:wrap}
+  .stat{font-family:var(--mono);font-size:12px;color:var(--txt-2)}
+  .stat b{display:block;font-size:20px;color:var(--txt);font-weight:600;font-variant-numeric:tabular-nums}
+  .restnote{font-size:12.5px;color:var(--txt-2);line-height:1.6;margin-bottom:14px;
+    padding:10px 12px;background:var(--surface-2);border-left:2px solid var(--accent);border-radius:var(--r-sm)}
+
+  .think{display:inline-block;width:6px;height:6px;border-radius:50%;background:var(--accent);
+    margin-right:7px;animation:beat 1.1s ease-in-out infinite;vertical-align:middle}
+
+  @media(prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
+
+  @media(max-width:680px){
+    .wrap{padding:20px 16px calc(100px + env(safe-area-inset-bottom))}
+    .masthead{padding-bottom:16px;margin-bottom:18px}
+
+    .strip{display:flex;overflow-x:auto;gap:10px;background:transparent;border:none;border-radius:0;
+      -webkit-overflow-scrolling:touch;scroll-snap-type:x mandatory;padding-bottom:2px}
+    .strip::-webkit-scrollbar{display:none}
+    .cell{flex:0 0 60%;scroll-snap-align:start;border:1px solid var(--line-bright);background:var(--surface);
+      border-radius:var(--r-lg)}
+    .strip .cell:first-child,.strip .cell:last-child{border-radius:var(--r-lg)}
+
+    .tabs{position:fixed;left:0;right:0;bottom:0;z-index:30;margin-bottom:0;border-radius:0;
+      border-left:none;border-right:none;border-bottom:none;padding-bottom:env(safe-area-inset-bottom);
+      box-shadow:0 -10px 28px -10px rgba(0,0,0,.55)}
+    .tab:first-child,.tab:last-child{border-radius:0}
+    .tab{flex-direction:column;gap:3px;padding:10px 2px 9px;min-height:60px}
+    .tlabel{font-size:8.5px;letter-spacing:.04em;gap:4px}
+    .ticon{width:19px;height:19px}
+    .tab .dot{position:absolute;top:6px;right:10px;min-width:14px;height:14px;line-height:14px;font-size:8px;padding:0 3px}
+
+    button{padding:12px 14px}
+    button.go{padding:14px}
+    button.x{padding:11px 10px}
+    .li{padding:14px 12px;gap:11px}
+    .li .nm{font-size:14px}
+    .cyc{min-width:42px;padding:8px 8px;font-size:10px}
+    .node.chk{width:22px;height:22px;left:-18px;top:9px}
+    .blk{padding:14px 16px}
+    .idea-item{padding:13px 12px}
+    .idea-item .irow button{min-height:40px}
+    .rail{padding-left:70px}
+    .rail::before{left:61px}
+    .blk .stamp{left:-70px;width:54px}
+    .playhead{left:44px}
+    .playhead::after{left:-44px}
+
+    .presence{right:10px;bottom:calc(76px + env(safe-area-inset-bottom));width:200px}
+  }
+  @media(max-width:560px){
+    .brand h1{font-size:26px}
+    .clock .t{font-size:32px}
+    .clock .t .sec{font-size:19px}
+  }
+</style>
+
+<div class="gate" id="pinGate">
+  <div class="gatecard">
+    <h1>DAY<span>OPS</span></h1>
+    <div class="sub">Masukkan PIN</div>
+    <div class="fld">
+      <input type="password" id="pinInput" inputmode="numeric" autocomplete="off" placeholder="PIN" style="text-align:center;font-size:22px;letter-spacing:.35em">
+    </div>
+    <button class="go" id="pinSubmitBtn" type="button" style="width:100%;margin-top:14px">Masuk</button>
+    <div class="verdictbar hide" id="pinVb" style="margin-top:14px"></div>
+  </div>
+</div>
+
+<div class="gate hide" id="loginGate">
+  <div class="gatecard">
+    <h1>DAY<span>OPS</span></h1>
+    <div class="sub">Pusat kendali harian &middot; NDE Tech</div>
+    <div class="rolegrid">
+      <button class="rolebtn" data-role="suami" type="button">👨 Masuk sebagai Suami</button>
+      <button class="rolebtn istri" data-role="istri" type="button">👩 Masuk sebagai Istri</button>
+    </div>
+  </div>
+</div>
+
+<div class="veil"></div>
+<div class="wrap">
+
+  <div class="masthead">
+    <div class="brand">
+      <h1>DAY<span>OPS</span></h1>
+      <div class="sub">Pusat kendali harian &middot; NDE Tech</div>
+      <button class="go" id="topStartBtn" type="button" style="margin-top:14px">▶ Mulai Ngopi</button>
+      <div class="resetrow">
+        <span class="reset-link" id="roleBadge" style="cursor:default;color:var(--accent)">—</span>
+        <button class="reset-link" id="switchRoleBtn">Ganti Peran</button>
+        <button class="reset-link" id="resetScheduleBtn">Reset Jadwal</button>
+        <button class="reset-link" id="resetAllBtn">Reset Semua</button>
+      </div>
+    </div>
+    <div class="clock">
+      <div class="t" id="clk">--:--<span class="sec">:--</span></div>
+      <div class="d" id="dat">—</div>
+    </div>
+  </div>
+
+  <div class="viewswitch">
+    <button data-view="hari" type="button">Hari Ini</button>
+    <button data-view="uang" type="button">Keuangan</button>
+    <button data-view="ingin" type="button">Keinginan<span class="dot" id="dotWish">0</span></button>
+  </div>
+
+  <div id="viewHariIni">
+  <div class="strip">
+    <div class="cell">
+      <div class="k">Blok Aktif</div>
+      <div class="v on" id="curN">—</div>
+      <div class="n" id="curT">—</div>
+    </div>
+    <div class="cell">
+      <div class="k">Berikutnya</div>
+      <div class="v" id="nxtN">—</div>
+      <div class="n" id="nxtT">—</div>
+    </div>
+    <div class="cell">
+      <div class="k">Selesai Pukul</div>
+      <div class="v" id="endT">—</div>
+      <div class="n" id="loadT">—</div>
+    </div>
+    <div class="cell">
+      <div class="k">Batas 22:00</div>
+      <div class="v" id="curfewV">—</div>
+      <div class="n" id="curfewN">—</div>
+    </div>
+    <div class="cell">
+      <div class="k">Progres Hari Ini</div>
+      <div class="v" id="pct">0%</div>
+      <div class="n" id="pctSub">belum ada kegiatan</div>
+      <div class="meter"><i id="bar"></i></div>
+    </div>
+  </div>
+
+  <div class="grid">
+
+    <div class="panel">
+      <header>
+        <h2>Lintasan Waktu</h2>
+        <div style="display:flex;align-items:center;gap:10px">
+          <button id="rethinkBtn" class="x" type="button">Pikirkan Ulang Semua</button>
+          <span class="tag" id="railTag">—</span>
+        </div>
+      </header>
+      <div class="verdictbar hide" id="rethinkVb" style="margin:14px 18px 0"></div>
+      <div class="curfew hide" id="curfewBar"></div>
+      <div class="rail" id="rail">
+        <div class="playhead off" id="ph" data-t=""></div>
+      </div>
+    </div>
+
+    <div class="col">
+
+      <div class="tabs" role="tablist">
+        <button class="tab" data-tab="mulai" type="button">
+          <svg class="ticon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M13 2 3 14h9l-1 8 10-12h-9l1-8z"/></svg>
+          <span class="tlabel">Mulai</span>
+        </button>
+        <button class="tab" data-tab="antrean" type="button">
+          <svg class="ticon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/>
+            <line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/>
+          </svg>
+          <span class="tlabel">Antrean<span class="dot" id="dotAntrean">0</span></span>
+        </button>
+        <button class="tab" data-tab="nanti" type="button">
+          <svg class="ticon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/>
+          </svg>
+          <span class="tlabel">Nanti<span class="dot" id="dotNanti">0</span></span>
+        </button>
+        <button class="tab" data-tab="alasan" type="button">
+          <svg class="ticon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <line x1="6" y1="3" x2="6" y2="15"/><circle cx="18" cy="6" r="3"/><circle cx="6" cy="18" r="3"/><path d="M18 9a9 9 0 0 1-9 9"/>
+          </svg>
+          <span class="tlabel">Alasan<span class="dot" id="dotAlasan">0</span></span>
+        </button>
+        <button class="tab" data-tab="tutup" type="button">
+          <svg class="ticon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
+          <span class="tlabel">Tutup<span class="dot" id="dotTutup">0</span></span>
+        </button>
+      </div>
+
+      <div class="panel" data-tabpanel="mulai">
+        <header><h2>Status Pagi &amp; Ide</h2><span class="tag" id="morningTag">—</span></header>
+        <div class="body">
+          <div id="preCoffee">
+            <button class="go" id="coffeeBtn" style="width:100%">☕ Sedang Ngopi</button>
+            <div class="hint">Klik saat kamu mulai ngopi pagi ini — jam ini jadi titik nol lintasan hari ini.</div>
+          </div>
+          <div id="postCoffee" style="display:none">
+            <div class="statusline">☕ Ngopi sejak <b id="coffeeAtTxt">—</b> · siap pukul <b id="readyTxt">—</b></div>
+            <div class="row">
+              <button class="x" id="readyNowBtn" style="flex:1">Siap Sekarang</button>
+              <button class="x" id="undoCoffeeBtn" style="flex:1">Batalkan</button>
+            </div>
+          </div>
+          <div class="row" style="margin-top:16px">
+            <div class="fld" style="flex:1"><label>Estimasi siap (menit)</label>
+              <input type="number" id="prepMins" min="0" max="240" step="5"></div>
+            <div class="fld" style="flex:1"><label>Jeda antar blok</label>
+              <input type="number" id="buffer" min="0" max="120" step="5"></div>
+          </div>
+
+          <div class="divider"></div>
+
+          <div class="ideabox">
+            <label>Tuang Ide</label>
+            <textarea id="ideaText" placeholder="Tulis ide yang kepikiran... Claude yang menentukan kapan waktu terbaik mengeksekusinya." rows="2"></textarea>
+            <button class="go" id="ideaBtn" style="width:100%;margin-top:8px">Simpan Ide</button>
+            <div class="verdictbar hide" id="ideaVb"></div>
+            <div class="ideahint">Kalau cocok dikerjakan hari ini, langsung masuk Antrean. Kalau belum saatnya, Claude menjadwalkannya ke tab Nanti — dan menyusun ulang urutannya lagi tiap kali ada ide baru masuk.</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="panel" data-tabpanel="antrean">
+        <header>
+          <h2>Antrean</h2>
+          <span class="tag" id="qTag">0 blok</span>
+        </header>
+        <div class="body">
+          <div class="addgrid">
+            <input type="text" id="tName" placeholder="Nama kegiatan — durasi ditaksir Claude" autocomplete="off">
+          </div>
+          <div class="addgrid2">
+            <select id="tPrio">
+              <option value="AUTO" selected>Otomatis · prioritas &amp; durasi</option>
+              <option value="P1">P1 · terkunci</option>
+              <option value="P2">P2 · penting</option>
+              <option value="P3">P3 · tunda</option>
+            </select>
+            <input type="time" id="tAt" title="Jam janji, kosongkan jika fleksibel">
+          </div>
+          <button class="go" id="addBtn" style="width:100%">Tambah &amp; susun ulang</button>
+
+          <div class="verdictbar hide" id="vb"></div>
+
+          <div class="list" id="list" style="margin-top:14px"></div>
+          <div class="postponebox hide" id="postponeBox">
+            <div class="ppname" id="ppName">—</div>
+            <textarea id="ppReason" placeholder="Kenapa ditunda? (wajib) — Claude memakai alasan ini untuk menjadwalkan ulang" rows="2"></textarea>
+            <div class="row" style="margin-top:8px">
+              <button class="x" id="ppCancelBtn" style="flex:1" type="button">Batal</button>
+              <button class="go" id="ppSubmitBtn" style="flex:1" type="button">Tunda &amp; Jadwalkan Ulang</button>
+            </div>
+          </div>
+
+          <button id="aiBtn" style="width:100%;margin-top:12px">Tinjau ulang dengan Claude</button>
+          <div class="hint">Durasi tidak diisi manual — Claude menaksirnya dari nama kegiatan (lalu bisa dikoreksi lewat tinjau ulang).<br>Jam janji diisi &rarr; blok jadi jangkar, sisanya menyesuaikan.<br>Klik kode prioritas untuk mengubah manual &middot; klik <b>Tunda</b> untuk menunda dengan alasan &middot; klik kotak di lintasan untuk menandai selesai.</div>
+
+          <div class="divider"></div>
+
+          <div class="ideabox">
+            <label>Kejadian Tak Terduga</label>
+            <div class="row">
+              <input type="text" id="disruptText" placeholder="mis. pemadaman listrik, hujan deras, sakit mendadak" autocomplete="off" style="flex:1">
+              <button id="disruptBtn" type="button">Laporkan</button>
+            </div>
+            <div class="verdictbar hide" id="disruptVb" style="margin-top:10px"></div>
+            <div class="ideahint">Kegiatan yang tidak bisa dikerjakan karena ini otomatis dikeluarkan dari hari ini dan dijadwalkan ulang oleh Claude ke tab Nanti.</div>
+            <div id="disruptLog" style="margin-top:10px"></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="panel" data-tabpanel="nanti">
+        <header>
+          <h2>Pekerjaan Lain Waktu</h2>
+          <span class="tag" id="backlogTag">—</span>
+        </header>
+        <div class="body">
+          <div class="hint" style="margin-top:0">Berisi ide yang belum saatnya dikerjakan, kegiatan yang tidak selesai hari ini, yang ditunda, dan yang terdampak gangguan tak terduga. Claude menentukan tanggal &amp; waktu spesifiknya (bukan cuma besok/lusa/minggu ini) serta urutannya — berdasarkan kepentingan, bukan urutan penambahan. Ide baru yang lebih mendesak bisa melompat ke depan ide lama.</div>
+          <button id="backlogRefreshBtn" style="width:100%;margin-top:14px">Susun Ulang dengan Claude</button>
+          <div class="verdictbar hide" id="backlogVb"></div>
+          <div id="backlogGroups" style="margin-top:14px"></div>
+        </div>
+      </div>
+
+      <div class="panel" data-tabpanel="alasan">
+        <header>
+          <h2>Keputusan Penjadwalan</h2>
+          <span class="tag" id="decTag">—</span>
+        </header>
+        <div class="body" style="padding:0">
+          <div class="dec" id="dec"></div>
+        </div>
+      </div>
+
+      <div class="panel" data-tabpanel="tutup">
+        <header><h2>Tutup Hari</h2><span class="tag" id="restTag">—</span></header>
+        <div class="body">
+          <div id="restIdle">
+            <button class="go" id="restBtn" style="width:100%">🌙 Ambil Istirahat</button>
+            <div class="hint">Menandakan hari ini selesai. Claude meninjau progres, menyusun rencana besok, dan menambahkannya ke tab Nanti.</div>
+            <div class="verdictbar hide" id="restMsg" style="margin-top:14px"></div>
+          </div>
+          <div id="restDone" style="display:none">
+            <div class="stats-row" id="restStats"></div>
+            <div class="restnote" id="restNote"></div>
+            <div style="font-family:var(--mono);font-size:10px;letter-spacing:.18em;text-transform:uppercase;color:var(--txt-3);margin-bottom:8px">Rencana Besok</div>
+            <div class="list" id="tomorrowList"></div>
+            <button class="x" id="resumeBtn" style="width:100%;margin-top:14px">Lanjutkan Hari Ini</button>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+  </div>
+
+  <div id="viewKeuangan" style="display:none">
+    <div class="strip">
+      <div class="cell">
+        <div class="k">Pemasukan Bulan Ini</div>
+        <div class="v on" id="finMasuk">Rp 0</div>
+        <div class="n">termasuk prive</div>
+      </div>
+      <div class="cell">
+        <div class="k">Pengeluaran Bulan Ini</div>
+        <div class="v" id="finKeluar">Rp 0</div>
+        <div class="n">semua kategori</div>
+      </div>
+      <div class="cell">
+        <div class="k">Dana Darurat</div>
+        <div class="v" id="finDarurat">Rp 0</div>
+        <div class="n">saldo saat ini</div>
+      </div>
+      <div class="cell">
+        <div class="k">Saving</div>
+        <div class="v" id="finSaving">Rp 0</div>
+        <div class="n">saldo saat ini</div>
+      </div>
+      <div class="cell">
+        <div class="k">Prive NDE Tech</div>
+        <div class="v" id="finPrive">Rp 0</div>
+        <div class="n">diambil bulan ini</div>
+      </div>
+    </div>
+
+    <div class="grid">
+      <div class="panel">
+        <header><h2>Riwayat Transaksi</h2><span class="tag" id="txTag">—</span></header>
+        <div class="body">
+          <button id="priveBtn" class="go" type="button" style="width:100%;margin-bottom:14px">💸 Ambil Prive NDE Tech</button>
+          <div class="list" id="txList"></div>
+          <div class="hint">Prive = dana yang kamu ambil langsung dari NDE Tech saat butuh — tercatat otomatis sebagai Pemasukan, tidak perlu saldo dulu.</div>
+        </div>
+      </div>
+
+      <div class="col">
+        <div class="panel">
+          <header><h2>Tambah Transaksi</h2><span class="tag">—</span></header>
+          <div class="body">
+            <div class="addgrid2">
+              <select id="txJenis">
+                <option value="masuk">Pemasukan</option>
+                <option value="keluar">Pengeluaran</option>
+                <option value="darurat">Dana Darurat</option>
+                <option value="saving">Saving</option>
+              </select>
+              <select id="txKategori"></select>
+            </div>
+            <div class="addgrid2" id="txArahWrap" style="display:none">
+              <select id="txArah"><option value="setor">Setor</option><option value="tarik">Tarik</option></select>
+              <div></div>
+            </div>
+            <div class="addgrid">
+              <input type="text" id="txAmount" inputmode="numeric" placeholder="Jumlah (Rp)">
+            </div>
+            <div class="addgrid">
+              <input type="text" id="txNote" placeholder="Catatan (opsional)" autocomplete="off">
+            </div>
+            <button class="go" id="txAddBtn" type="button" style="width:100%">Simpan Transaksi</button>
+            <div class="verdictbar hide" id="txVb"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div id="viewKeinginan" style="display:none">
+    <div class="grid">
+      <div class="panel">
+        <header><h2>Roadmap Prioritas</h2><span class="tag" id="wishTag">—</span></header>
+        <div class="body">
+          <button id="wishRefreshBtn" type="button" style="width:100%;margin-bottom:14px">Susun Ulang Roadmap dengan Claude</button>
+          <div class="verdictbar hide" id="wishVb"></div>
+          <div id="wishGroups"></div>
+          <div class="hint">Roadmap disusun Claude berdasarkan alasan &amp; kepentingan — bukan siapa yang menambah duluan. Keinginan baru yang lebih mendesak bisa melompat ke depan.</div>
+          <div class="hint" id="wishDebug" style="opacity:.6">diag: —</div>
+        </div>
+      </div>
+
+      <div class="col">
+        <div class="panel">
+          <header><h2>Tambah Keinginan</h2><span class="tag">—</span></header>
+          <div class="body">
+            <div class="addgrid">
+              <input type="text" id="wishName" placeholder="Nama barang" autocomplete="off">
+            </div>
+            <div class="addgrid2">
+              <input type="text" id="wishPrice" inputmode="numeric" placeholder="Perkiraan harga (Rp)">
+              <select id="wishFor"><option value="suami">Keinginan Suami</option><option value="istri">Keinginan Istri</option></select>
+            </div>
+            <div class="addgrid">
+              <textarea id="wishReason" placeholder="Alasan (wajib) — Claude memakai ini untuk menyusun roadmap" rows="2"></textarea>
+            </div>
+            <button class="go" id="wishAddBtn" type="button" style="width:100%">Tambah Keinginan</button>
+            <div class="hint">Setelah ditambah, Claude otomatis menyusun ulang Roadmap Prioritas di sebelah kiri.</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<div class="presence" id="presenceWidget">
+  <div class="phead" id="presenceHead">
+    <span>Sedang Apa</span>
+    <button type="button" id="presenceMinBtn">▾</button>
+  </div>
+  <div class="pbody">
+    <div id="presenceBody"></div>
+    <button class="go pupdate" id="presenceUpdateBtn" type="button">Update Status &amp; Foto</button>
+  </div>
+</div>
+
+<div class="modal hide" id="statusModal">
+  <div class="modalcard">
+    <h3>Update Status</h3>
+    <div class="fld">
+      <label>Sedang apa?</label>
+      <input type="text" id="statusActivity" placeholder="mis. meeting klien, masak, antar anak">
+    </div>
+    <div class="photopick">
+      <img class="prev" id="statusPreview" style="display:none">
+      <input type="file" id="statusPhotoInput" accept="image/*" capture="environment">
+    </div>
+    <div class="row" style="margin-top:16px">
+      <button class="x" id="statusCancelBtn" type="button" style="flex:1">Batal</button>
+      <button class="go" id="statusSaveBtn" type="button" style="flex:1">Simpan</button>
+    </div>
+  </div>
+</div>
+
+<script>
+(function(){
+  "use strict";
+
+  var KEY="dayops.v3", CARRY_KEY="dayops.carry.v1", BACKLOG_KEY="dayops.backlog.v1";
+  var PPM=2.15, MINH=62, CURFEW=22*60;
+  var S={coffeeAt:null,prep:120,buffer:15,tasks:[],dayEnded:false,endedAt:null,dayNote:"",tomorrow:[],disruptions:[]};
+  var BACKLOG=[];
+  var sampler=null;
+  var ROLE=null, db=null;
+  var AUTH_TOKEN=null;
+  function keyFor(base){return base+"."+(ROLE||"suami");}
+
+  /* ---------- AI beneran (proxy ke /api/ai, gantikan claude.use("sample")) ---------- */
+  function aiJSON(prompt,opts){
+    opts=opts||{};
+    return fetch("/api/ai",{
+      method:"POST",
+      headers:{"Content-Type":"application/json"},
+      body:JSON.stringify({prompt:prompt,modelTier:opts.modelTier||"default",token:AUTH_TOKEN})
+    }).then(function(res){
+      if(res.status===401) return Promise.reject({code:"session_expired"});
+      if(res.status===429) return Promise.reject({code:"rate_limited"});
+      if(!res.ok) return Promise.reject({code:"refused"});
+      return res.json();
+    }).then(function(data){
+      if(!data||typeof data!=="object") return Promise.reject({code:"invalid_json"});
+      if(data.error) return Promise.reject({code:data.error});
+      return data;
+    });
+  }
+
+  /* ---------- util ---------- */
+  function today(){var d=new Date();return d.getFullYear()+"-"+(d.getMonth()+1)+"-"+d.getDate();}
+  function nowMin(){var d=new Date();return d.getHours()*60+d.getMinutes()+d.getSeconds()/60;}
+  function hhmm(m){m=((Math.floor(m)%1440)+1440)%1440;
+    return String(Math.floor(m/60)).padStart(2,"0")+":"+String(m%60).padStart(2,"0");}
+  function dur(m){if(m==null)return"menaksir…";m=Math.round(m);var h=Math.floor(m/60),r=m%60;
+    return h&&r?h+"j "+r+"m":h?h+" jam":r+" mnt";}
+  function esc(s){return String(s).replace(/[&<>"']/g,function(c){
+    return {"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c];});}
+  function rank(p){return p==="P1"?0:p==="P2"?1:2;}
+
+  function todayDate(){var d=new Date();return new Date(d.getFullYear(),d.getMonth(),d.getDate());}
+  function isoDate(d){return d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0")+"-"+String(d.getDate()).padStart(2,"0");}
+  function addDays(base,n){var d=new Date(base);d.setDate(d.getDate()+n);return d;}
+  function parseDateStr(s){
+    if(typeof s!=="string"||!/^\d{4}-\d{2}-\d{2}$/.test(s)) return null;
+    var p=s.split("-"); var d=new Date(+p[0],+p[1]-1,+p[2]);
+    return isNaN(d.getTime())?null:d;
+  }
+  function validDateStr(s){
+    var d=parseDateStr(s);
+    return d?s:null;
+  }
+  var DAYPARTS=["pagi","siang","sore","kapan saja"];
+  function validDaypart(s){
+    s=String(s||"").toLowerCase().replace(/_/g," ").trim();
+    return DAYPARTS.indexOf(s)>=0?s:"kapan saja";
+  }
+  function itemDateLabel(b){
+    var d=parseDateStr(b.targetDate);
+    if(!d) return "tanggal belum ditentukan";
+    var lbl=d.toLocaleDateString("id-ID",{weekday:"long",day:"numeric",month:"long"});
+    return lbl+(b.daypart&&b.daypart!=="kapan saja"?(" · "+b.daypart):"");
+  }
+  function bucketFor(dateStr0){
+    var d=parseDateStr(dateStr0);
+    if(!d) return "nanti";
+    var diff=Math.round((d-todayDate())/86400000);
+    if(diff<=1) return "besok";
+    if(diff===2) return "lusa";
+    if(diff<=7) return "minggu_ini";
+    return "nanti";
+  }
+  var SRC_LABEL={ide:"ide tersimpan",carry:"tidak selesai hari sebelumnya",gangguan:"terdampak gangguan tak terduga",tunda:"ditunda dari hari ini",rethink:"disusun ulang"};
+
+  function load(){
+    var raw; try{raw=localStorage.getItem(keyFor(KEY));}catch(e){return false;}
+    if(!raw) return false;
+    var o; try{o=JSON.parse(raw);}catch(e){return false;}
+    if(!o) return false;
+    if(o.day===today()){
+      S.coffeeAt=o.coffeeAt; S.prep=o.prep!=null?o.prep:120; S.buffer=o.buffer!=null?o.buffer:15;
+      S.tasks=o.tasks||[]; S.dayEnded=!!o.dayEnded; S.endedAt=o.endedAt;
+      S.dayNote=o.dayNote||""; S.tomorrow=o.tomorrow||[]; S.disruptions=o.disruptions||[];
+      return true;
+    }
+    var carry=null; try{carry=JSON.parse(localStorage.getItem(keyFor(CARRY_KEY))||"null");}catch(e){}
+    S.coffeeAt=null; S.prep=120; S.buffer=o.buffer!=null?o.buffer:15;
+    S.dayEnded=false; S.endedAt=null; S.dayNote=""; S.tomorrow=[]; S.disruptions=[];
+    if(carry&&carry.tasks&&carry.tasks.length){
+      S.tasks=carry.tasks.map(function(t,i){
+        return {id:Date.now()+i,name:t.name,mins:Math.max(5,+t.mins||60),
+          p:(t.p==="P1"||t.p==="P2"||t.p==="P3")?t.p:"P2",at:null,why:t.why||"",done:false,doneAt:null};
+      });
+    } else S.tasks=[];
+    try{localStorage.removeItem(keyFor(CARRY_KEY));}catch(e){}
+    if(BACKLOG.some(function(b){return b.source==="carry";})){
+      BACKLOG=BACKLOG.filter(function(b){return b.source!=="carry";});
+      saveBacklog();
+    }
+    return true;
+  }
+  function save(){try{localStorage.setItem(keyFor(KEY),JSON.stringify({
+    day:today(),coffeeAt:S.coffeeAt,prep:S.prep,buffer:S.buffer,tasks:S.tasks,
+    dayEnded:S.dayEnded,endedAt:S.endedAt,dayNote:S.dayNote,tomorrow:S.tomorrow,disruptions:S.disruptions}));}catch(e){}}
+
+  function loadBacklog(){
+    try{var raw=localStorage.getItem(keyFor(BACKLOG_KEY));BACKLOG=raw?JSON.parse(raw):[];}catch(e){BACKLOG=[];}
+    if(!Array.isArray(BACKLOG)) BACKLOG=[];
+  }
+  function saveBacklog(){try{localStorage.setItem(keyFor(BACKLOG_KEY),JSON.stringify(BACKLOG));}catch(e){}}
+  function pushBacklog(partial){
+    BACKLOG.push({
+      id:Date.now()+Math.floor(Math.random()*1000),
+      name:partial.name,mins:partial.mins||60,why:partial.why||"",
+      source:partial.source||"ide",
+      targetDate:validDateStr(partial.targetDate)||isoDate(addDays(todayDate(),1)),
+      daypart:validDaypart(partial.daypart),
+      rank:BACKLOG.length+1,addedAt:Date.now()
+    });
+    saveBacklog();
+  }
+
+  /* ---------- mesin penjadwalan ---------- */
+  function plan(){
+    var blocks=[], log=[];
+    if(S.coffeeAt==null) return {blocks:blocks,log:log,started:false};
+
+    var cur=S.coffeeAt;
+    blocks.push({kind:"pad",p:"RITUAL",name:"Ngopi · mandi · persiapan",start:cur,mins:S.prep});
+    cur+=S.prep;
+
+    function pushBuffer(){
+      if(S.buffer>0&&blocks.length){
+        blocks.push({kind:"pad",p:"BUFFER",name:"Jeda · pindah lokasi",start:cur,mins:S.buffer});
+        cur+=S.buffer;
+      }
+    }
+
+    var doneTasks=S.tasks.filter(function(t){return t.done;}).sort(function(a,b){return a.doneAt-b.doneAt;});
+    doneTasks.forEach(function(t){
+      var s=Math.max(cur,t.doneAt-t.mins);
+      blocks.push({kind:"task",id:t.id,p:t.p,name:t.name,start:s,mins:t.doneAt-s,why:t.why,lock:t.at!=null,done:true});
+      log.push({v:"done",n:t.name,w:"Selesai pukul "+hhmm(t.doneAt)+"."});
+      cur=t.doneAt;
+      pushBuffer();
+    });
+
+    var pending=S.tasks.filter(function(t){return !t.done&&t.mins!=null;});
+    var locked=pending.filter(function(t){return t.p!=="P3"&&t.at!=null;}).sort(function(a,b){return a.at-b.at;});
+    var flex=pending.filter(function(t){return t.p!=="P3"&&t.at==null;})
+                     .sort(function(a,b){var r=rank(a.p)-rank(b.p);return r?r:a.mins-b.mins;});
+    var defer=pending.filter(function(t){return t.p==="P3";});
+
+    function layFlex(t,verdict,reason){
+      pushBuffer();
+      blocks.push({kind:"task",id:t.id,p:t.p,name:t.name,start:cur,mins:t.mins,why:t.why,lock:false,done:false});
+      cur+=t.mins;
+      log.push({v:verdict,n:t.name,w:reason});
+    }
+
+    var fi=0;
+    locked.forEach(function(L){
+      while(fi<flex.length){
+        var f=flex[fi];
+        var pre=blocks.length&&S.buffer>0?S.buffer:0;
+        if(cur+pre+f.mins+S.buffer<=L.at){layFlex(f,"fit","Muat di celah sebelum “"+L.name+"” yang terkunci "+hhmm(L.at)+".");fi++;}
+        else break;
+      }
+      var clash=cur>L.at;
+      if(!clash&&L.at-cur>=10){
+        blocks.push({kind:"pad",p:"GAP",name:"Longgar · ruang kerjaan mendadak",start:cur,mins:L.at-cur});
+      }
+      if(!clash) cur=L.at;
+      blocks.push({kind:"task",id:L.id,p:L.p,name:L.name,start:cur,mins:L.mins,why:L.why,lock:true,clash:clash,done:false});
+      log.push({v:clash?"clash":"anchor",n:L.name,
+        w:clash?("Blok sebelumnya melewati pukul "+hhmm(L.at)+" sebanyak "+dur(cur-L.at)+". Pangkas atau tunda satu blok.")
+               :("Jangkar pukul "+hhmm(L.at)+" — semua blok lain disusun di sekitarnya.")});
+      cur+=L.mins;
+    });
+
+    while(fi<flex.length){
+      var f=flex[fi];
+      layFlex(f,"push", locked.length
+        ? "Ditaruh setelah blok terkunci; "+f.p+", "+dur(f.mins)+"."
+        : (f.p==="P1"?"Prioritas tertinggi tanpa jam terkunci — jalan lebih dulu."
+                     :"Menyusul setelah semua P1; yang lebih pendek didahulukan agar cepat tuntas."));
+      fi++;
+    }
+
+    defer.forEach(function(t){
+      log.push({v:"defer",n:t.name,
+        w:t.curfewDeferred?"Dipindah otomatis ke luar hari ini karena jadwal melewati batas 22:00."
+                           :("P3 — keluar dari lintasan hari ini. "+dur(t.mins)+" tidak dipaksakan masuk.")});
+    });
+
+    return {blocks:blocks,log:log,started:true};
+  }
+
+  function curfewCheck(r){
+    if(!r.started||!r.blocks.length) return {ok:true,end:null,slack:null};
+    var last=r.blocks[r.blocks.length-1];
+    var end=last.start+last.mins;
+    return end<=CURFEW?{ok:true,end:end,slack:CURFEW-end}:{ok:false,end:end,over:end-CURFEW};
+  }
+
+  function autoFitCurfew(){
+    var guard=0;
+    while(guard++<25){
+      var r=plan(), cf=curfewCheck(r);
+      if(cf.ok) break;
+      var cand=S.tasks.filter(function(t){return !t.done&&t.p!=="P3"&&t.at==null;});
+      if(!cand.length) break;
+      cand.sort(function(a,b){var ra=a.p==="P1"?1:0,rb=b.p==="P1"?1:0;return ra!==rb?ra-rb:b.mins-a.mins;});
+      cand[0].p="P3"; cand[0].curfewDeferred=true;
+    }
+    draw();
+  }
+
+  /* ---------- tab ---------- */
+  function selectTab(name){
+    document.querySelectorAll(".tab").forEach(function(b){b.classList.toggle("active",b.getAttribute("data-tab")===name);});
+    document.querySelectorAll("[data-tabpanel]").forEach(function(p){
+      p.style.display=(p.getAttribute("data-tabpanel")===name)?"block":"none";
+    });
+  }
+  document.querySelector(".tabs").addEventListener("click",function(e){
+    var b=e.target.closest("[data-tab]"); if(!b) return; selectTab(b.getAttribute("data-tab"));
+  });
+
+  /* ---------- DOM refs ---------- */
+  var railEl=document.getElementById("rail"), phEl=document.getElementById("ph");
+  var morningTag=document.getElementById("morningTag");
+  var preCoffee=document.getElementById("preCoffee"), postCoffee=document.getElementById("postCoffee");
+  var coffeeAtTxt=document.getElementById("coffeeAtTxt"), readyTxt=document.getElementById("readyTxt");
+  var prepEl=document.getElementById("prepMins"), bufEl=document.getElementById("buffer");
+  var vb=document.getElementById("vb");
+  var restIdle=document.getElementById("restIdle"), restDone=document.getElementById("restDone");
+  var restMsg=document.getElementById("restMsg"), restTag=document.getElementById("restTag");
+  var restBtn=document.getElementById("restBtn"), resumeBtn=document.getElementById("resumeBtn");
+
+  /* ---------- render ---------- */
+  function draw(){
+    var r=plan(), cf=curfewCheck(r);
+
+    var cbar=document.getElementById("curfewBar");
+    if(r.started&&!cf.ok){
+      cbar.classList.remove("hide");
+      cbar.innerHTML='<span><b>MELEWATI BATAS 22:00</b> — lewat '+dur(cf.over)+', proyeksi selesai '+hhmm(cf.end)+'</span>'+
+        '<button id="fitBtn" type="button">Tunda otomatis agar muat</button>';
+      document.getElementById("fitBtn").addEventListener("click",autoFitCurfew);
+    } else {cbar.classList.add("hide");cbar.innerHTML="";}
+
+    Array.prototype.slice.call(railEl.querySelectorAll(".blk")).forEach(function(n){n.remove();});
+    if(!r.started){
+      var idle=document.createElement("div");
+      idle.className="blk pad"; idle.style.minHeight="0";
+      idle.innerHTML='<div class="name">Klik "Sedang Ngopi" untuk memulai lintasan hari ini</div>';
+      railEl.appendChild(idle);
+      document.getElementById("railTag").textContent="—";
+    } else {
+      r.blocks.forEach(function(x){
+        var el=document.createElement("div");
+        el.className="blk"+(x.kind==="pad"?" pad":"")+(x.clash?" clash":"");
+        el.setAttribute("data-p",x.p);
+        el.setAttribute("data-s",x.start);
+        el.setAttribute("data-e",x.start+x.mins);
+        if(x.kind==="task"){el.setAttribute("data-task","1");el.setAttribute("data-id",x.id);el.setAttribute("data-done",x.done?"1":"0");}
+        el.style.minHeight=Math.max(MINH,x.mins*PPM)+"px";
+        var h='<div class="stamp">'+hhmm(x.start)+'<em>'+hhmm(x.start+x.mins)+'</em></div>';
+        if(x.kind==="task"){
+          h+='<button class="node chk'+(x.done?" done":"")+'" data-check="'+x.id+'" title="'+(x.done?"Batalkan tanda selesai":"Tandai selesai")+'">'+(x.done?"✓":"")+'</button>';
+        } else h+='<div class="node"></div>';
+        h+='<div class="name">'+esc(x.name)+'</div>';
+        if(x.kind==="task"){
+          h+='<div class="meta"><span class="chip '+x.p+'">'+x.p+'</span>'+
+             (x.lock?'<span class="chip lock">TERKUNCI</span>':'')+
+             (x.done?'<span class="chip done">SELESAI</span>':'')+
+             '<span class="dur">'+dur(x.mins)+'</span></div>';
+          if(x.why) h+='<div class="why">'+esc(x.why)+'</div>';
+        } else h+='<div class="dur">'+dur(x.mins)+'</div>';
+        el.innerHTML=h;
+        railEl.appendChild(el);
+      });
+      var Lb=r.blocks[r.blocks.length-1];
+      document.getElementById("railTag").textContent=hhmm(r.blocks[0].start)+" → "+hhmm(Lb.start+Lb.mins);
+    }
+
+    var pendingList=S.tasks.filter(function(t){return !t.done;});
+    var LI=document.getElementById("list");
+    document.getElementById("qTag").textContent=pendingList.length+" blok";
+    LI.innerHTML=pendingList.length?pendingList.map(function(t){
+      var pOk=t.p==="P1"||t.p==="P2"||t.p==="P3";
+      return '<div class="li" data-p="'+(pOk?t.p:"P2")+'"><div class="bar"></div>'+
+        '<button class="cyc" data-cyc="'+t.id+'"'+(pOk?"":" disabled")+'>'+(pOk?t.p:"…")+'</button>'+
+        '<div class="nm">'+esc(t.name)+'</div>'+
+        (t.at!=null?'<span class="lk">'+hhmm(t.at)+'</span>':'')+
+        '<div class="mm">'+dur(t.mins)+'</div>'+
+        '<button class="cyc" data-postpone="'+t.id+'" title="Tunda dengan alasan">Tunda</button>'+
+        '<button class="x" data-del="'+t.id+'">×</button></div>';
+    }).join(""):'<div class="void">belum ada kegiatan</div>';
+
+    var D=document.getElementById("dec");
+    document.getElementById("decTag").textContent=r.log.length?r.log.length+" langkah":"—";
+    var VMAP={anchor:"JANGKAR",fit:"DISISIPKAN",push:"DIURUTKAN",defer:"DITUNDA",clash:"BENTROK",done:"SELESAI"};
+    D.innerHTML=r.log.length?r.log.map(function(e){
+      return '<div class="dr"><span class="vd '+e.v+'">'+VMAP[e.v]+'</span>'+
+        '<div class="dx"><div class="dn">'+esc(e.n)+'</div><div class="dw">'+esc(e.w)+'</div></div></div>';
+    }).join(""):'<div class="void">tambahkan kegiatan untuk melihat alasannya</div>';
+
+    var curfewV=document.getElementById("curfewV"), curfewN=document.getElementById("curfewN");
+    if(!r.started){curfewV.className="v";curfewV.textContent="—";curfewN.textContent="belum mulai";}
+    else if(cf.ok){curfewV.className="v on";curfewV.textContent="Sisa "+dur(cf.slack);curfewN.textContent="proyeksi selesai "+hhmm(cf.end);}
+    else {curfewV.className="v warn";curfewV.textContent="Lewat "+dur(cf.over);curfewN.textContent="perlu penyesuaian";}
+
+    var totalActive=S.tasks.filter(function(t){return t.p!=="P3";}).length;
+    var doneCount=S.tasks.filter(function(t){return t.done;}).length;
+    var pct=totalActive?Math.round(doneCount/totalActive*100):0;
+    document.getElementById("pct").textContent=totalActive?pct+"%":"—";
+    document.getElementById("pctSub").textContent=totalActive?doneCount+"/"+totalActive+" selesai":"belum ada kegiatan";
+    document.getElementById("bar").style.width=pct+"%";
+
+    document.getElementById("endT").textContent=(r.started&&cf.end!=null)?hhmm(cf.end):"—";
+    var work=S.tasks.filter(function(t){return t.p!=="P3";}).reduce(function(a,t){return a+(t.mins||0);},0);
+    var dcount=S.tasks.filter(function(t){return t.p==="P3";}).length;
+    document.getElementById("loadT").textContent=dur(work)+" kerja"+(dcount?" · "+dcount+" ditunda":"");
+
+    var dotA=document.getElementById("dotAntrean"); if(dotA) dotA.textContent=pendingList.length;
+    var dotAl=document.getElementById("dotAlasan"); if(dotAl) dotAl.textContent=r.log.length;
+    var dotT=document.getElementById("dotTutup"); if(dotT) dotT.textContent=S.dayEnded?"✓":"";
+
+    tick(); save(); renderRest(); renderDisruptions();
+  }
+
+  /* ---------- jam berjalan ---------- */
+  function tick(){
+    var d=new Date(), n=nowMin();
+    if(typeof syncTopStart==="function") syncTopStart();
+    document.getElementById("clk").innerHTML=
+      String(d.getHours()).padStart(2,"0")+":"+String(d.getMinutes()).padStart(2,"0")+
+      '<span class="sec">:'+String(d.getSeconds()).padStart(2,"0")+'</span>';
+    document.getElementById("dat").textContent=
+      d.toLocaleDateString("id-ID",{weekday:"long",day:"numeric",month:"long",year:"numeric"});
+
+    morningTag.textContent = S.coffeeAt==null?"Belum mulai":(n<S.coffeeAt+S.prep?"Persiapan":"Siap");
+
+    var cN=document.getElementById("curN"), cT=document.getElementById("curT"),
+        nN=document.getElementById("nxtN"), nT=document.getElementById("nxtT");
+
+    if(S.coffeeAt==null){
+      phEl.classList.add("off");
+      cN.textContent="Siaga"; cT.textContent="klik Sedang Ngopi untuk mulai";
+      nN.textContent="—"; nT.textContent="—";
+      return;
+    }
+
+    var blks=Array.prototype.slice.call(railEl.querySelectorAll(".blk[data-s]"));
+    var ritualEl=railEl.querySelector('.blk[data-p="RITUAL"]');
+    var readyAt=S.coffeeAt+S.prep;
+    var taskEls=blks.filter(function(el){return el.getAttribute("data-task")==="1";});
+    var doneEls=taskEls.filter(function(el){return el.getAttribute("data-done")==="1";});
+    var pendingEls=taskEls.filter(function(el){return el.getAttribute("data-done")!=="1";});
+
+    blks.forEach(function(el){el.classList.remove("now","done");});
+    doneEls.forEach(function(el){el.classList.add("done");});
+
+    var host=null;
+    if(n<readyAt){
+      if(ritualEl){ritualEl.classList.add("now");host=ritualEl;}
+      cN.textContent="Ngopi · mandi · persiapan";
+      cT.textContent="siap dalam "+dur(readyAt-n);
+      nN.textContent=pendingEls[0]?pendingEls[0].querySelector(".name").textContent:"—";
+      nT.textContent=pendingEls[0]?("mulai ≈ "+hhmm(+pendingEls[0].getAttribute("data-s"))):"—";
+    } else if(pendingEls.length){
+      pendingEls[0].classList.add("now"); host=pendingEls[0];
+      cN.textContent=pendingEls[0].querySelector(".name").textContent;
+      var plannedEnd=+pendingEls[0].getAttribute("data-e");
+      cT.textContent = n<plannedEnd?("rencana selesai "+hhmm(plannedEnd)):("lewat "+dur(n-plannedEnd)+" dari rencana");
+      nN.textContent=pendingEls[1]?pendingEls[1].querySelector(".name").textContent:"—";
+      nT.textContent=pendingEls[1]?hhmm(+pendingEls[1].getAttribute("data-s")):"tidak ada";
+    } else {
+      cN.textContent="Selesai"; cT.textContent="semua kegiatan tuntas";
+      nN.textContent="—"; nT.textContent="—";
+      host=doneEls.length?doneEls[doneEls.length-1]:null;
+    }
+
+    if(host){
+      phEl.classList.remove("off");
+      var hs=+host.getAttribute("data-s"), he=+host.getAttribute("data-e");
+      var f=he>hs?Math.min(1,Math.max(0,(n-hs)/(he-hs))):1;
+      phEl.style.top=(host.offsetTop+f*host.offsetHeight)+"px";
+      phEl.setAttribute("data-t",hhmm(n));
+    } else phEl.classList.add("off");
+  }
+
+  /* ---------- penilaian prioritas & durasi ---------- */
+  var RE1=/(klien|studio|meeting|rapat|janji|temu|notaris|deadline|tenggat|kirim|setor|tanda ?tangan|bayar|invoice|presentasi|pitch|wawancara|foto|nikah|dokter|bandara|kereta)/i;
+  var RE3=/(install|instal|backup|cadangan|update|upgrade|bersih|rapikan|arsip|riset|belajar|nonton|baca|eksplor|coba-coba|ngoprek)/i;
+
+  function guessMins(name){
+    if(/rapat|meeting|telepon|telp|call|diskusi|koordinasi/i.test(name)) return 45;
+    if(/wawancara|interview|presentasi|pitch|demo/i.test(name)) return 90;
+    if(/dokter|notaris|bandara|kereta|urus|antar/i.test(name)) return 120;
+    if(/riset|belajar|baca|eksplor|desain|develop|coding|nulis|tulis|rancang/i.test(name)) return 120;
+    if(/email|balas|cek|kirim|setor|bayar/i.test(name)) return 20;
+    return 60;
+  }
+  function guess(name,manualP){
+    var p=manualP,why="";
+    if(!p){
+      if(RE1.test(name)){p="P1";why="Melibatkan pihak lain atau tenggat — dinilai terkunci.";}
+      else if(RE3.test(name)){p="P3";why="Kerja mandiri tanpa tenggat — aman ditunda.";}
+      else{p="P2";why="Penting tapi fleksibel — bisa digeser kalau ada yang mendadak.";}
+    }
+    return {p:p,mins:guessMins(name),why:why||"Durasi ditaksir dari pola nama kegiatan."};
+  }
+  function guessIdea(text){
+    if(RE1.test(text)) return {mode:"today",p:"P1",mins:guessMins(text),why:"Terlihat mendesak atau melibatkan pihak lain — masuk hari ini."};
+    return {mode:"later",mins:guessMins(text),why:"Disimpan dulu — Claude tidak tersedia untuk menaksir waktu terbaik."};
+  }
+
+  function ctxLine(){
+    var base="Sekarang "+new Date().toLocaleDateString("id-ID",{weekday:"long",day:"numeric",month:"long",year:"numeric"})+", pukul "+hhmm(nowMin())+". ";
+    base += S.coffeeAt!=null
+      ? ("Pengguna mulai ngopi pukul "+hhmm(S.coffeeAt)+" dan siap bekerja pukul "+hhmm(S.coffeeAt+S.prep)+". ")
+      : "Pengguna belum menandai mulai ngopi pagi ini. ";
+    base += "Semua kegiatan harus tuntas sebelum pukul 22:00. Pengguna sering kena pekerjaan mendadak, jadi urutan harus tahan gangguan.";
+    if(S.disruptions&&S.disruptions.length){
+      base += " Kejadian tak terduga yang tercatat hari ini: "+S.disruptions.map(function(d){return d.text;}).join("; ")+".";
+    }
+    return base;
+  }
+
+  function say(html,isErr){vb.className="verdictbar"+(isErr?" err":"");vb.innerHTML=html;}
+  function hush(){vb.className="verdictbar hide";}
+  function sayRest(html,isErr){restMsg.classList.remove("hide");restMsg.className="verdictbar"+(isErr?" err":"");restMsg.innerHTML=html;}
+  var ideaVb=document.getElementById("ideaVb");
+  function sayIdea(html,isErr){ideaVb.classList.remove("hide");ideaVb.className="verdictbar"+(isErr?" err":"");ideaVb.innerHTML=html;}
+  var backlogVb=document.getElementById("backlogVb");
+  function sayBacklog(html,isErr){backlogVb.classList.remove("hide");backlogVb.className="verdictbar"+(isErr?" err":"");backlogVb.innerHTML=html;}
+
+  var ERR={
+    not_granted:"Claude tidak diizinkan untuk halaman ini — penilaian pakai aturan lokal.",
+    sampling_disabled:"Claude tidak tersedia di akun ini — penilaian pakai aturan lokal.",
+    rate_limited:"Terlalu banyak permintaan. Tunggu sebentar lalu coba lagi.",
+    session_expired:"Sesi berakhir — masuk lagi ke Claude, lalu ulangi.",
+    invalid_json:"Jawaban Claude tidak terbaca. Coba sekali lagi.",
+    refused:"Claude menolak permintaan ini.",
+    empty_completion:"Claude tidak memberi jawaban. Coba lagi."
+  };
+  function errMsg(c){return ERR[c]||"Gangguan sementara — aturan lokal tetap dipakai.";}
+
+  function triage(t,done){
+    var manualP=t.p;
+    if(!sampler){
+      var g=guess(t.name,manualP);
+      t.p=g.p;t.mins=g.mins;t.why=g.why;
+      return done("lokal");
+    }
+    sampler.json(
+      "Kamu menilai satu kegiatan harian: estimasi durasi realistis dalam menit"+(manualP?"":" dan tingkat prioritas")+". "+ctxLine()+"\n\n"+
+      "Kegiatan: \""+t.name+"\""+(manualP?(" — prioritas sudah ditetapkan manual sebagai "+manualP+", jangan diubah."):"")+"\n"+
+      "Sudah ada di hari ini: "+(S.tasks.filter(function(x){return x.id!==t.id&&x.mins!=null;})
+        .map(function(x){return x.name+" ("+x.p+", "+x.mins+"m)";}).join("; ")||"belum ada")+"\n\n"+
+      (manualP?"":"P1 = terkunci pihak ketiga atau bertenggat hari ini. P2 = penting tapi bisa digeser. P3 = tunda ke hari lain.\n")+
+      "Perkirakan durasi wajar untuk kegiatan ini dalam menit (kelipatan 5, masuk akal untuk ritme kerja).\n"+
+      'Balas hanya JSON: {'+(manualP?"":'"p":"P1|P2|P3",')+'"menit":60,"alasan":"satu kalimat bahasa Indonesia, maksimal 15 kata"}',
+      {modelTier:"quick",cache:false}
+    ).then(function(o){
+      if(!manualP){
+        var p=String(o&&o.p||"").toUpperCase();
+        t.p=(p==="P1"||p==="P2"||p==="P3")?p:guess(t.name,null).p;
+      }
+      var m=Math.round(+(o&&o.menit));
+      t.mins=(isFinite(m)&&m>=5&&m<=600)?Math.round(m/5)*5:guess(t.name,t.p).mins;
+      t.why=String(o&&o.alasan||"").slice(0,180)||guess(t.name,t.p).why;
+      done("claude");
+    }).catch(function(e){
+      var g=guess(t.name,manualP);
+      t.p=g.p;t.mins=g.mins;t.why=g.why;
+      done("lokal",e&&e.code);
+    });
+  }
+
+  var aiBtn=document.getElementById("aiBtn");
+  function review(){
+    if(!sampler||!S.tasks.length) return;
+    aiBtn.disabled=true;
+    say('<span class="think"></span>Claude sedang menimbang urutan…');
+    sampler.json(
+      "Kamu menyusun rencana harian. "+ctxLine()+"\n\n"+
+      "Daftar kegiatan:\n"+JSON.stringify(S.tasks.filter(function(t){return t.mins!=null;}).map(function(t){
+        return {id:t.id,nama:t.name,menit:t.mins,prioritas:t.p,jam_terkunci:t.at==null?null:hhmm(t.at),selesai:t.done};
+      }))+"\n\n"+
+      "Nilai ulang kegiatan yang BELUM selesai. P1 = terkunci pihak ketiga atau bertenggat hari ini; "+
+      "P2 = penting tapi bisa digeser; P3 = keluarkan dari hari ini. "+
+      "Kalau sebuah kegiatan jelas punya jam janji, isi jam_terkunci format HH:MM, selain itu null. "+
+      "Perkirakan ulang durasi realistis dalam menit (kelipatan 5) untuk tiap kegiatan berdasarkan jenisnya — jangan asal menyalin nilai lama kalau terasa kurang wajar. "+
+      "Total pekerjaan P1+P2 tidak boleh membuat hari berakhir setelah pukul 22:00; kalau tidak muat, jadikan P3 yang kurang penting. "+
+      "Jangan menumpuk terlalu banyak — sisakan ruang untuk pekerjaan mendadak.\n\n"+
+      'Balas hanya JSON: {"nilai":[{"id":1,"p":"P1","menit":60,"jam_terkunci":null,"alasan":"maks 18 kata"}],"catatan":"satu kalimat saran operasi hari ini"}',
+      {modelTier:"default",cache:false}
+    ).then(function(o){
+      var arr=(o&&o.nilai)||[], hit=0;
+      arr.forEach(function(v){
+        var t=S.tasks.filter(function(x){return x.id===+v.id&&!x.done;})[0];
+        if(!t) return;
+        var p=String(v.p||"").toUpperCase();
+        if(p==="P1"||p==="P2"||p==="P3"){t.p=p;delete t.curfewDeferred;hit++;}
+        if(typeof v.menit==="number"&&isFinite(v.menit)&&v.menit>=5&&v.menit<=600){t.mins=Math.round(v.menit/5)*5;}
+        if(typeof v.jam_terkunci==="string"&&/^\d{1,2}:\d{2}$/.test(v.jam_terkunci)){
+          var q=v.jam_terkunci.split(":");t.at=(+q[0])*60+(+q[1]);
+        } else if(v.jam_terkunci===null) t.at=null;
+        if(v.alasan) t.why=String(v.alasan).slice(0,180);
+      });
+      S.dayNote=String((o&&o.catatan)||"");
+      draw();
+      say("<b>"+hit+" kegiatan dinilai ulang.</b> "+esc(S.dayNote));
+    }).catch(function(e){
+      say(errMsg(e&&e.code),true);
+    }).finally(function(){aiBtn.disabled=false;});
+  }
+  aiBtn.addEventListener("click",review);
+
+  /* ---------- pikirkan ulang semua (hari ini + backlog sekaligus) ---------- */
+  var rethinkBtn=document.getElementById("rethinkBtn"), rethinkVb=document.getElementById("rethinkVb");
+  function sayRethink(html,isErr){rethinkVb.classList.remove("hide");rethinkVb.className="verdictbar"+(isErr?" err":"");rethinkVb.innerHTML=html;}
+
+  function rethinkAll(){
+    if(S.dayEnded){sayRethink("Hari sudah ditutup — klik <b>Lanjutkan Hari Ini</b> di tab Tutup dulu.",true);return;}
+    var todayItems=S.tasks.filter(function(t){return !t.done&&t.mins!=null;});
+    if(!sampler){
+      rethinkBtn.disabled=true;
+      sayRethink('<span class="think"></span>Claude tidak tersedia — backlog disusun ulang dengan aturan lokal.');
+      reorderBacklog(function(){rethinkBtn.disabled=false;sayRethink("<b>Backlog disusun ulang secara lokal.</b> Jadwal hari ini tidak diubah karena Claude tidak tersedia.",true);});
+      return;
+    }
+    if(!todayItems.length&&!BACKLOG.length){sayRethink("Belum ada kegiatan atau backlog untuk dipikirkan ulang.",true);return;}
+
+    rethinkBtn.disabled=true;
+    sayRethink('<span class="think"></span>Claude menarik seluruh jadwal &amp; backlog, menyusun ulang…');
+
+    var items=todayItems.map(function(t){
+      return {id:"t"+t.id,asal:"hari_ini",nama:t.name,menit:t.mins,prioritas:t.p,jam_terkunci:t.at==null?null:hhmm(t.at)};
+    }).concat(BACKLOG.map(function(b){
+      return {id:"b"+b.id,asal:"backlog",nama:b.name,menit:b.mins,target_lama:b.targetDate,catatan_lama:b.why};
+    }));
+
+    sampler.json(
+      "Kamu menyusun ulang SELURUH rencana kerja seseorang sekaligus: kegiatan hari ini maupun backlog ide & pekerjaan tertunda. "+ctxLine()+"\n\n"+
+      "Semua item (hari ini + backlog):\n"+JSON.stringify(items)+"\n\n"+
+      "Untuk SETIAP item, putuskan hari_ini (true/false). Item backlog boleh ditarik ke hari ini (hari_ini:true) kalau sekarang lebih layak dikerjakan; "+
+      "item hari ini boleh dipindah ke backlog (hari_ini:false) kalau tidak realistis dikerjakan hari ini — termasuk karena kejadian tak terduga yang tercatat di atas.\n"+
+      "Untuk item dengan hari_ini:true — isi p (P1/P2/P3), menit (durasi realistis, kelipatan 5), jam_terkunci (HH:MM kalau ada jam janji jelas, selain itu null). Total P1+P2 harus tuntas sebelum pukul 22:00.\n"+
+      "Untuk item dengan hari_ini:false — isi target_tanggal (format YYYY-MM-DD, tanggal kalender nyata mulai besok), waktu_hari (pagi|siang|sore|kapan_saja), dan rank (urutan global lintas SEMUA item backlog, 1=paling prioritas, tidak boleh sama).\n\n"+
+      'Balas hanya JSON: {"rencana":[{"id":"t123","hari_ini":true,"p":"P1","menit":60,"jam_terkunci":null,"target_tanggal":null,"waktu_hari":null,"rank":null,"alasan":"maks 15 kata"}],"catatan":"ringkasan singkat perubahan besar, 1-2 kalimat bahasa Indonesia"}',
+      {modelTier:"default",cache:false}
+    ).then(function(o){
+      var arr=(o&&o.rencana)||[];
+      arr.forEach(function(v){
+        var refid=String(v.id||"");
+        var kind=refid.charAt(0), realId=+refid.slice(1);
+        if(!realId&&realId!==0) return;
+        if(kind==="t"){
+          var idx=-1;
+          for(var i=0;i<S.tasks.length;i++){ if(S.tasks[i].id===realId&&!S.tasks[i].done){ idx=i; break; } }
+          if(idx<0) return;
+          var t=S.tasks[idx];
+          if(v.hari_ini===false){
+            S.tasks.splice(idx,1);
+            pushBacklog({name:t.name,mins:t.mins,why:v.alasan||"Dipindah dari hari ini.",source:"rethink",
+              targetDate:v.target_tanggal,daypart:v.waktu_hari});
+          } else {
+            var p=String(v.p||"").toUpperCase();
+            if(p==="P1"||p==="P2"||p==="P3"){t.p=p;delete t.curfewDeferred;}
+            if(typeof v.menit==="number"&&isFinite(v.menit)&&v.menit>=5&&v.menit<=600){t.mins=Math.round(v.menit/5)*5;}
+            if(typeof v.jam_terkunci==="string"&&/^\d{1,2}:\d{2}$/.test(v.jam_terkunci)){
+              var q=v.jam_terkunci.split(":");t.at=(+q[0])*60+(+q[1]);
+            } else if(v.jam_terkunci===null) t.at=null;
+            if(v.alasan) t.why=String(v.alasan).slice(0,180);
+          }
+        } else if(kind==="b"){
+          var b=BACKLOG.filter(function(x){return x.id===realId;})[0];
+          if(!b) return;
+          if(v.hari_ini===true){
+            BACKLOG=BACKLOG.filter(function(x){return x.id!==realId;});
+            var p2=String(v.p||"").toUpperCase();
+            var at2=null;
+            if(typeof v.jam_terkunci==="string"&&/^\d{1,2}:\d{2}$/.test(v.jam_terkunci)){
+              var q2=v.jam_terkunci.split(":");at2=(+q2[0])*60+(+q2[1]);
+            }
+            var mins2=(typeof v.menit==="number"&&isFinite(v.menit)&&v.menit>=5&&v.menit<=600)?Math.round(v.menit/5)*5:b.mins;
+            S.tasks.push({id:Date.now()+Math.floor(Math.random()*1000),name:b.name,mins:mins2,
+              p:(p2==="P1"||p2==="P2"||p2==="P3")?p2:"P2",at:at2,why:v.alasan||b.why||"",done:false,doneAt:null});
+          } else {
+            var td=validDateStr(v.target_tanggal); if(td) b.targetDate=td;
+            b.daypart=validDaypart(v.waktu_hari);
+            if(isFinite(+v.rank)) b.rank=+v.rank;
+            if(v.alasan) b.why=String(v.alasan).slice(0,180);
+          }
+        }
+      });
+      BACKLOG.sort(function(a,b){return (a.rank||999)-(b.rank||999);});
+      BACKLOG.forEach(function(b,i){b.rank=i+1;});
+      saveBacklog(); draw(); renderBacklog();
+      sayRethink("<b>Jadwal &amp; backlog disusun ulang.</b> "+esc(String((o&&o.catatan)||"")));
+    }).catch(function(e){
+      sayRethink(errMsg(e&&e.code),true);
+    }).finally(function(){rethinkBtn.disabled=false;});
+  }
+  rethinkBtn.addEventListener("click",rethinkAll);
+
+  /* ---------- status pagi ---------- */
+  function syncMorning(){
+    prepEl.value=S.prep; bufEl.value=S.buffer;
+    if(S.coffeeAt==null){preCoffee.style.display="block";postCoffee.style.display="none";}
+    else{
+      preCoffee.style.display="none";postCoffee.style.display="block";
+      coffeeAtTxt.textContent=hhmm(S.coffeeAt);
+      readyTxt.textContent=hhmm(S.coffeeAt+S.prep);
+    }
+    syncTopStart();
+  }
+  document.getElementById("coffeeBtn").addEventListener("click",function(){
+    S.coffeeAt=Math.floor(nowMin()); syncMorning(); draw(); selectTab("antrean");
+  });
+  document.getElementById("readyNowBtn").addEventListener("click",function(){
+    S.prep=Math.max(0,Math.floor(nowMin())-S.coffeeAt); syncMorning(); draw();
+  });
+  document.getElementById("undoCoffeeBtn").addEventListener("click",function(){
+    S.coffeeAt=null; syncMorning(); draw();
+  });
+  prepEl.addEventListener("change",function(){
+    S.prep=Math.max(0,Math.min(240,+prepEl.value||0)); syncMorning(); draw();
+  });
+  bufEl.addEventListener("change",function(){
+    S.buffer=Math.max(0,Math.min(120,+bufEl.value||0)); draw();
+  });
+
+  var topStartBtn=document.getElementById("topStartBtn");
+  function syncTopStart(){
+    if(S.coffeeAt==null){
+      topStartBtn.textContent="▶ Mulai Ngopi"; topStartBtn.disabled=false; topStartBtn.className="go";
+    } else if(nowMin()<S.coffeeAt+S.prep){
+      topStartBtn.textContent="⏩ Siap Sekarang"; topStartBtn.disabled=false; topStartBtn.className="go";
+    } else {
+      topStartBtn.textContent="✓ Sedang Bekerja"; topStartBtn.disabled=true; topStartBtn.className="x";
+    }
+  }
+  topStartBtn.addEventListener("click",function(){
+    if(S.coffeeAt==null){
+      S.coffeeAt=Math.floor(nowMin()); syncMorning(); draw(); selectTab("antrean");
+    } else if(nowMin()<S.coffeeAt+S.prep){
+      S.prep=Math.max(0,Math.floor(nowMin())-S.coffeeAt); syncMorning(); draw();
+    }
+  });
+
+  /* ---------- backlog (Nanti) ---------- */
+  var backlogRefreshBtn=document.getElementById("backlogRefreshBtn");
+
+  function renderBacklog(){
+    var dot=document.getElementById("dotNanti"); if(dot) dot.textContent=BACKLOG.length;
+    var tag=document.getElementById("backlogTag"); if(tag) tag.textContent=BACKLOG.length?BACKLOG.length+" tertunda":"—";
+    var box=document.getElementById("backlogGroups");
+    if(!box) return;
+    if(!BACKLOG.length){ box.innerHTML='<div class="void">belum ada pekerjaan yang ditunda</div>'; return; }
+    var LABELS={besok:"Besok",lusa:"Lusa",minggu_ini:"Minggu Ini",nanti:"Nanti"};
+    var ORDER=["besok","lusa","minggu_ini","nanti"];
+    var groups={};
+    BACKLOG.forEach(function(b){
+      var k=bucketFor(b.targetDate);
+      (groups[k]=groups[k]||[]).push(b);
+    });
+    box.innerHTML=ORDER.filter(function(k){return groups[k]&&groups[k].length;}).map(function(k){
+      var items=groups[k].slice().sort(function(a,b){return (a.rank||999)-(b.rank||999);});
+      return '<div class="grouphead"><b>'+LABELS[k]+'</b> &middot; '+items.length+'</div>'+
+        '<div class="list">'+items.map(function(b){
+          return '<div class="idea-item"><div class="itxt">'+esc(b.name)+'</div>'+
+            '<div class="inote">'+itemDateLabel(b)+' · '+dur(b.mins)+' · '+(SRC_LABEL[b.source]||"ide")+(b.why?" — "+esc(b.why):"")+'</div>'+
+            '<div class="irow"><button class="x" data-bpromote="'+b.id+'" style="flex:1">Jadwalkan hari ini</button>'+
+            '<button class="x" data-bdrop="'+b.id+'">×</button></div></div>';
+        }).join("")+'</div>';
+    }).join("");
+  }
+
+  function reorderBacklog(cb){
+    renderBacklog();
+    if(!BACKLOG.length){ if(cb) cb(); return; }
+    if(!sampler){
+      BACKLOG.sort(function(a,b){
+        var sa=(a.source==="carry"||a.source==="gangguan")?0:1, sb=(b.source==="carry"||b.source==="gangguan")?0:1;
+        if(sa!==sb) return sa-sb;
+        var ra=RE1.test(a.name)?0:1, rb=RE1.test(b.name)?0:1;
+        if(ra!==rb) return ra-rb;
+        return a.addedAt-b.addedAt;
+      });
+      BACKLOG.forEach(function(b,i){
+        b.rank=i+1;
+        if(!parseDateStr(b.targetDate)){
+          var soon=(b.source==="carry"||b.source==="gangguan"||b.source==="tunda");
+          b.targetDate=isoDate(addDays(todayDate(),soon?1:3));
+        }
+        if(!b.daypart) b.daypart="kapan saja";
+      });
+      saveBacklog(); renderBacklog();
+      if(cb) cb();
+      return;
+    }
+    if(backlogRefreshBtn) backlogRefreshBtn.disabled=true;
+    sampler.json(
+      "Kamu menyusun ulang backlog pekerjaan yang TIDAK dikerjakan hari ini — gabungan dari ide yang ditunda, kegiatan yang tidak selesai hari ini, kegiatan yang ditunda dengan alasan, dan kegiatan yang terdampak gangguan tak terduga. "+ctxLine()+"\n\n"+
+      "Backlog saat ini:\n"+JSON.stringify(BACKLOG.map(function(b){
+        return {id:b.id,nama:b.name,menit:b.mins,sumber:SRC_LABEL[b.source]||"ide tersimpan",catatan_lama:b.why,target_lama:b.targetDate};
+      }))+"\n\n"+
+      "Untuk SETIAP item, tentukan target_tanggal (format YYYY-MM-DD, tanggal kalender nyata mulai besok — buat perkiraan spesifik, jangan asal jauh) dan waktu_hari (pagi|siang|sore|kapan_saja), serta rank (angka bulat, 1 = paling layak dikerjakan duluan, urutan global lintas semua item, tidak boleh ada yang sama). "+
+      "Nilai berdasarkan kepentingan dan urgensi sungguhan — BUKAN urutan kapan item ditambahkan. Item yang baru boleh mendapat rank lebih kecil (lebih dulu) daripada item lama kalau memang lebih penting atau mendesak.\n\n"+
+      'Balas hanya JSON: {"urutan":[{"id":1,"target_tanggal":"2026-09-04","waktu_hari":"pagi","rank":1,"alasan":"maks 15 kata"}]}',
+      {modelTier:"default",cache:false}
+    ).then(function(o){
+      var arr=(o&&o.urutan)||[];
+      arr.forEach(function(v){
+        var b=BACKLOG.filter(function(x){return x.id===+v.id;})[0];
+        if(!b) return;
+        var td=validDateStr(v.target_tanggal); if(td) b.targetDate=td;
+        b.daypart=validDaypart(v.waktu_hari);
+        if(isFinite(+v.rank)) b.rank=+v.rank;
+        if(v.alasan) b.why=String(v.alasan).slice(0,180);
+      });
+      BACKLOG.sort(function(a,b){return (a.rank||999)-(b.rank||999);});
+      BACKLOG.forEach(function(b,i){b.rank=i+1;});
+      saveBacklog(); renderBacklog();
+    }).catch(function(){
+      BACKLOG.sort(function(a,b){return a.addedAt-b.addedAt;});
+      saveBacklog(); renderBacklog();
+    }).finally(function(){
+      if(backlogRefreshBtn) backlogRefreshBtn.disabled=false;
+      if(cb) cb();
+    });
+  }
+
+  if(backlogRefreshBtn){
+    backlogRefreshBtn.addEventListener("click",function(){
+      sayBacklog('<span class="think"></span>Claude sedang menyusun ulang backlog…');
+      reorderBacklog(function(){sayBacklog("<b>Backlog disusun ulang.</b>");});
+    });
+  }
+
+  document.getElementById("backlogGroups").addEventListener("click",function(e){
+    var pr=e.target.closest("[data-bpromote]"), dl=e.target.closest("[data-bdrop]");
+    if(dl){
+      BACKLOG=BACKLOG.filter(function(x){return x.id!==+dl.getAttribute("data-bdrop");});
+      saveBacklog(); renderBacklog();
+      return;
+    }
+    if(pr){
+      if(S.dayEnded){sayBacklog("Hari sudah ditutup — klik <b>Lanjutkan Hari Ini</b> di tab Tutup untuk mengedit lagi.",true);return;}
+      var id=+pr.getAttribute("data-bpromote");
+      var b=BACKLOG.filter(function(x){return x.id===id;})[0];
+      if(!b) return;
+      BACKLOG=BACKLOG.filter(function(x){return x.id!==id;}); saveBacklog(); renderBacklog();
+      var t={id:Date.now(),name:b.name,mins:b.mins,p:"P2",at:null,why:b.why||"",done:false,doneAt:null};
+      S.tasks.push(t); draw(); selectTab("antrean");
+    }
+  });
+
+  /* ---------- ide ---------- */
+  var ideaText=document.getElementById("ideaText"), ideaBtn=document.getElementById("ideaBtn");
+
+  function landIdea(mode,data,code){
+    ideaBtn.disabled=false;
+    var codeSuffix=code?" <span style='color:var(--txt-3)'>("+esc(errMsg(code))+")</span>":"";
+    if(mode==="today"){
+      if(S.dayEnded){
+        pushBacklog({name:data.text,mins:data.mins,why:data.why,source:"ide"});
+        reorderBacklog();
+        sayIdea("<b>Hari sudah ditutup.</b> Ide disimpan ke tab Nanti — jadwalkan lagi setelah kamu lanjutkan hari ini."+codeSuffix,true);
+        return;
+      }
+      var t={id:Date.now(),name:data.text,mins:data.mins,p:data.p,at:null,why:data.why||"",done:false,doneAt:null};
+      S.tasks.push(t); draw();
+      sayIdea("<b>Masuk hari ini sebagai "+t.p+" · "+dur(t.mins)+".</b> "+esc(t.why)+codeSuffix);
+      selectTab("antrean");
+    } else {
+      pushBacklog({name:data.text,mins:data.mins,why:data.why,source:"ide"});
+      sayIdea('<span class="think"></span>Ide disimpan — Claude menyusun ulang backlog…');
+      reorderBacklog(function(){
+        sayIdea("<b>Ide masuk ke backlog.</b> Lihat urutannya di tab Nanti."+codeSuffix);
+      });
+    }
+  }
+
+  function submitIdea(){
+    var txt=ideaText.value.trim();
+    if(!txt){ideaText.focus();return;}
+    ideaText.value="";
+    ideaBtn.disabled=true;
+    sayIdea('<span class="think"></span>'+(sampler?"Claude":"Aturan lokal")+' memikirkan kapan ide ini sebaiknya dieksekusi…');
+
+    if(!sampler){
+      var g=guessIdea(txt);
+      landIdea(g.mode,{text:txt,p:g.p,mins:g.mins,why:g.why});
+      return;
+    }
+
+    sampler.json(
+      "Kamu membantu memutuskan kapan sebuah ide sebaiknya dieksekusi. "+ctxLine()+"\n\n"+
+      "Ide: \""+txt+"\"\n"+
+      "Kegiatan yang belum selesai hari ini: "+(S.tasks.filter(function(x){return !x.done&&x.mins!=null;})
+        .map(function(x){return x.name+" ("+x.p+", "+x.mins+"m)";}).join("; ")||"belum ada")+"\n\n"+
+      "Putuskan: apakah ide ini layak dieksekusi HARI INI juga (kalau mendesak, singkat, atau berkaitan dengan pekerjaan yang sedang berjalan), "+
+      "atau lebih baik DISIMPAN dulu untuk waktu lain (kalau butuh riset, belum mendesak, atau hari ini sudah padat). "+
+      "Perkirakan juga durasi realistis dalam menit.\n\n"+
+      'Balas hanya JSON: {"eksekusi":"hari_ini|nanti","p":"P1|P2|P3","menit":60,"alasan":"satu kalimat bahasa Indonesia, maksimal 18 kata"}',
+      {modelTier:"quick",cache:false}
+    ).then(function(o){
+      var ex=String(o&&o.eksekusi||"").toLowerCase();
+      var m=Math.round(+(o&&o.menit));
+      var mins=(isFinite(m)&&m>=5&&m<=600)?Math.round(m/5)*5:guessMins(txt);
+      if(ex==="hari_ini"){
+        var p=String(o&&o.p||"").toUpperCase();
+        landIdea("today",{
+          text:txt,
+          p:(p==="P1"||p==="P2"||p==="P3")?p:(guessIdea(txt).p||"P2"),
+          mins:mins,
+          why:String(o&&o.alasan||"").slice(0,180)
+        });
+      } else {
+        landIdea("later",{text:txt,mins:mins,why:String(o&&o.alasan||"").slice(0,180)});
+      }
+    }).catch(function(e){
+      var g=guessIdea(txt);
+      landIdea(g.mode,{text:txt,p:g.p,mins:g.mins,why:g.why},e&&e.code);
+    });
+  }
+  ideaBtn.addEventListener("click",submitIdea);
+  ideaText.addEventListener("keydown",function(e){if(e.key==="Enter"&&(e.metaKey||e.ctrlKey))submitIdea();});
+
+  /* ---------- kejadian tak terduga ---------- */
+  var disruptText=document.getElementById("disruptText"), disruptBtn=document.getElementById("disruptBtn");
+  var disruptVb=document.getElementById("disruptVb");
+  function sayDisrupt(html,isErr){disruptVb.classList.remove("hide");disruptVb.className="verdictbar"+(isErr?" err":"");disruptVb.innerHTML=html;}
+
+  function renderDisruptions(){
+    var box=document.getElementById("disruptLog");
+    if(!box) return;
+    if(!S.disruptions||!S.disruptions.length){ box.innerHTML=""; return; }
+    box.innerHTML=S.disruptions.slice().reverse().map(function(d){
+      return '<div class="idea-item"><div class="itxt">⚡ '+esc(d.text)+'</div>'+
+        '<div class="inote">'+hhmm(d.ts)+(d.note?" — "+esc(d.note):"")+(d.count?(" · "+d.count+" kegiatan disesuaikan"):" · tidak ada kegiatan yang disesuaikan")+'</div>'+
+        '<div class="irow"><button class="x" data-dropdisrupt="'+d.id+'" style="flex:1">Hapus catatan</button></div></div>';
+    }).join("");
+  }
+
+  function reportDisruption(){
+    var txt=disruptText.value.trim();
+    if(!txt){disruptText.focus();return;}
+    if(S.dayEnded){sayDisrupt("Hari sudah ditutup — klik <b>Lanjutkan Hari Ini</b> untuk melapor gangguan.",true);return;}
+    disruptText.value="";
+    disruptBtn.disabled=true;
+    sayDisrupt('<span class="think"></span>'+(sampler?"Claude":"Aturan lokal")+' menilai dampaknya…');
+
+    var pend=S.tasks.filter(function(t){return !t.done&&t.mins!=null;});
+
+    function apply(affected,note){
+      var moved=0;
+      affected.forEach(function(v){
+        var idx=-1;
+        for(var i=0;i<S.tasks.length;i++){ if(S.tasks[i].id===v.id&&!S.tasks[i].done){ idx=i; break; } }
+        if(idx<0) return;
+        var t=S.tasks[idx];
+        S.tasks.splice(idx,1);
+        pushBacklog({name:t.name,mins:t.mins,why:v.alasan||("Terdampak: "+txt),source:"gangguan"});
+        moved++;
+      });
+      S.disruptions.push({id:Date.now(),text:txt,ts:Math.floor(nowMin()),note:note||"",count:moved});
+      draw();
+      if(moved){
+        sayDisrupt('<span class="think"></span>Claude menjadwalkan ulang '+moved+' kegiatan yang terdampak…');
+        reorderBacklog(function(){
+          disruptBtn.disabled=false;
+          sayDisrupt("<b>"+moved+" kegiatan dipindah ke backlog karena "+esc(txt)+".</b> "+esc(note||""));
+        });
+      } else {
+        disruptBtn.disabled=false;
+        sayDisrupt("<b>Dicatat.</b> Tidak ada kegiatan hari ini yang perlu disesuaikan. "+esc(note||""));
+      }
+    }
+
+    if(!sampler){
+      var words=txt.toLowerCase().split(/\s+/).filter(function(w){return w.length>3;});
+      var hit=pend.filter(function(t){
+        var nm=t.name.toLowerCase();
+        return words.some(function(w){return nm.indexOf(w)>=0;});
+      }).map(function(t){return {id:t.id,alasan:null};});
+      apply(hit,"Dicocokkan kata kunci secara lokal — Claude tidak tersedia, periksa manual.");
+      return;
+    }
+
+    sampler.json(
+      "Kamu menilai dampak sebuah kejadian tak terduga terhadap rencana kerja hari ini. "+ctxLine()+"\n\n"+
+      "Kejadian baru: \""+txt+"\"\n\n"+
+      "Kegiatan yang belum selesai hari ini:\n"+JSON.stringify(pend.map(function(t){return {id:t.id,nama:t.name,menit:t.mins,prioritas:t.p};}))+"\n\n"+
+      "Tentukan kegiatan mana saja yang SEKARANG TIDAK BISA dikerjakan sesuai rencana karena kejadian ini (mis. butuh listrik saat listrik padam, butuh keluar rumah saat hujan deras, dsb) — item itu harus dikeluarkan dari hari ini dan dijadwalkan ulang nanti. Kegiatan yang tidak terkait tetap di hari ini, jangan disertakan.\n\n"+
+      'Balas hanya JSON: {"terdampak":[{"id":1,"alasan":"maks 12 kata"}],"catatan":"ringkasan dampak, maks 20 kata bahasa Indonesia"}',
+      {modelTier:"quick",cache:false}
+    ).then(function(o){
+      var arr=(o&&o.terdampak)||[];
+      var list=arr.map(function(v){return {id:+v.id,alasan:String(v.alasan||"").slice(0,140)};})
+        .filter(function(v){return pend.some(function(t){return t.id===v.id;});});
+      apply(list,String((o&&o.catatan)||""));
+    }).catch(function(e){
+      disruptBtn.disabled=false;
+      sayDisrupt(errMsg(e&&e.code),true);
+    });
+  }
+  disruptBtn.addEventListener("click",reportDisruption);
+  disruptText.addEventListener("keydown",function(e){if(e.key==="Enter"&&(e.metaKey||e.ctrlKey))reportDisruption();});
+
+  document.getElementById("disruptLog").addEventListener("click",function(e){
+    var dd=e.target.closest("[data-dropdisrupt]");
+    if(!dd) return;
+    var id=+dd.getAttribute("data-dropdisrupt");
+    S.disruptions=S.disruptions.filter(function(x){return x.id!==id;});
+    draw();
+  });
+
+  /* ---------- tampilan (Hari Ini / Keuangan / Keinginan) ---------- */
+  function selectView(name){
+    document.getElementById("viewHariIni").style.display=name==="hari"?"block":"none";
+    document.getElementById("viewKeuangan").style.display=name==="uang"?"block":"none";
+    document.getElementById("viewKeinginan").style.display=name==="ingin"?"block":"none";
+    document.querySelectorAll(".viewswitch button").forEach(function(b){
+      b.classList.toggle("active",b.getAttribute("data-view")===name);
+    });
+    try{localStorage.setItem("dayops.view",name);}catch(e){}
+  }
+  document.querySelector(".viewswitch").addEventListener("click",function(e){
+    var b=e.target.closest("[data-view]"); if(!b) return; selectView(b.getAttribute("data-view"));
+  });
+
+  /* ---------- util keuangan ---------- */
+  function toNumber(s){return +String(s).replace(/[^\d]/g,"")||0;}
+  function rp(n){return "Rp "+Math.round(n||0).toLocaleString("id-ID");}
+  var CAT_MASUK=["Gaji Suami","Gaji Istri","Kolam","Kebon","Prive NDE Tech"];
+  var CAT_KELUAR=["Kasih Ortu","Kasih Adek","Wifi","Listrik","Rokok","Jajan","Fashion","Skincare","Pulsa","Rekreasi","Transport","Belanja Dapur"];
+
+  var txJenis=document.getElementById("txJenis"), txKategori=document.getElementById("txKategori"),
+      txArahWrap=document.getElementById("txArahWrap"), txArah=document.getElementById("txArah"),
+      txAmount=document.getElementById("txAmount"), txNote=document.getElementById("txNote"),
+      txAddBtn=document.getElementById("txAddBtn"), txVb=document.getElementById("txVb");
+  function sayTx(html,isErr){txVb.classList.remove("hide");txVb.className="verdictbar"+(isErr?" err":"");txVb.innerHTML=html;}
+
+  function syncTxFields(){
+    var j=txJenis.value;
+    if(j==="masuk"){txKategori.style.display="";txKategori.innerHTML=CAT_MASUK.map(function(c){return "<option>"+c+"</option>";}).join("");txArahWrap.style.display="none";}
+    else if(j==="keluar"){txKategori.style.display="";txKategori.innerHTML=CAT_KELUAR.map(function(c){return "<option>"+c+"</option>";}).join("");txArahWrap.style.display="none";}
+    else {txKategori.style.display="none";txKategori.innerHTML="";txArahWrap.style.display="grid";}
+  }
+  txJenis.addEventListener("change",syncTxFields);
+
+  function addTx(jenis,kategoriOrArah,amount,note,doneCb){
+    if(!db){sayTx("Belum terhubung ke penyimpanan bersama — coba lagi sebentar.",true);return;}
+    if(!amount||amount<=0){sayTx("Jumlah harus lebih dari 0.",true);return;}
+    var now=new Date();
+    var doc={jenis:jenis,amount:amount,note:note||"",role:ROLE,ts:Date.now(),
+      ym:now.getFullYear()+"-"+String(now.getMonth()+1).padStart(2,"0")};
+    if(jenis==="masuk"||jenis==="keluar") doc.kategori=kategoriOrArah;
+    if(jenis==="darurat"||jenis==="saving") doc.arah=kategoriOrArah;
+    db.collection("tx").add(doc).then(function(){
+      sayTx("<b>Tersimpan.</b> "+rp(amount)+(doc.kategori?" — "+esc(doc.kategori):"")+(doc.arah?" — "+esc(doc.arah==="setor"?"Setor":"Tarik"):""));
+      if(doneCb) doneCb();
+    }).catch(function(){sayTx("Gagal menyimpan — coba lagi.",true);});
+  }
+
+  txAddBtn.addEventListener("click",function(){
+    var j=txJenis.value, amount=toNumber(txAmount.value), note=txNote.value.trim();
+    var extra=(j==="masuk"||j==="keluar")?txKategori.value:txArah.value;
+    addTx(j,extra,amount,note,function(){txAmount.value="";txNote.value="";});
+  });
+
+  document.getElementById("priveBtn").addEventListener("click",function(){
+    var v=window.prompt("Ambil prive berapa (Rp)?");
+    if(v==null) return;
+    var amount=toNumber(v);
+    if(!amount) return;
+    addTx("masuk","Prive NDE Tech",amount,"Prive diambil langsung dari NDE Tech.");
+  });
+
+  var TX=[];
+  function subscribeTx(){
+    var q=db.collection("tx").orderBy("ts","desc").limit(500);
+    q.get().then(function(snap){
+      TX=snap.docs.map(function(d){var o=Object.assign({},d.data()||{});o.id=d.id;return o;});
+      renderFinance();
+    }).catch(function(){});
+    q.onSnapshot(function(snap){
+      TX=snap.docs.map(function(d){var o=Object.assign({},d.data()||{});o.id=d.id;return o;});
+      renderFinance();
+    },function(){});
+  }
+  function renderFinance(){
+    var now=new Date();
+    var ym=now.getFullYear()+"-"+String(now.getMonth()+1).padStart(2,"0");
+    var masuk=0,keluar=0,prive=0,darurat=0,saving=0;
+    TX.forEach(function(t){
+      if(t.jenis==="masuk"&&t.ym===ym){masuk+=t.amount;if(t.kategori==="Prive NDE Tech")prive+=t.amount;}
+      if(t.jenis==="keluar"&&t.ym===ym) keluar+=t.amount;
+      if(t.jenis==="darurat") darurat += t.arah==="tarik"?-t.amount:t.amount;
+      if(t.jenis==="saving") saving += t.arah==="tarik"?-t.amount:t.amount;
+    });
+    document.getElementById("finMasuk").textContent=rp(masuk);
+    document.getElementById("finKeluar").textContent=rp(keluar);
+    document.getElementById("finDarurat").textContent=rp(darurat);
+    document.getElementById("finSaving").textContent=rp(saving);
+    document.getElementById("finPrive").textContent=rp(prive);
+
+    var box=document.getElementById("txList");
+    document.getElementById("txTag").textContent=TX.length+" transaksi";
+    box.innerHTML=TX.length?TX.slice(0,60).map(function(t){
+      var isIn=t.jenis==="masuk"||((t.jenis==="darurat"||t.jenis==="saving")&&t.arah!=="tarik");
+      var label=t.kategori||(t.jenis==="darurat"?"Dana Darurat":t.jenis==="saving"?"Saving":"");
+      var arahTxt=t.arah?(" · "+(t.arah==="setor"?"Setor":"Tarik")):"";
+      return '<div class="li" data-p="P2"><div class="bar"></div>'+
+        '<div class="nm">'+esc(label)+arahTxt+(t.note?' · <span style="color:var(--txt-3)">'+esc(t.note)+'</span>':'')+'</div>'+
+        '<div class="mm amt '+(isIn?"in":"out")+'">'+(isIn?"+":"-")+rp(t.amount)+'</div></div>';
+    }).join(""):'<div class="void">belum ada transaksi</div>';
+  }
+
+  /* ---------- keinginan & roadmap ---------- */
+  var wishName=document.getElementById("wishName"), wishPrice=document.getElementById("wishPrice"),
+      wishFor=document.getElementById("wishFor"), wishReason=document.getElementById("wishReason"),
+      wishAddBtn=document.getElementById("wishAddBtn"), wishVb=document.getElementById("wishVb"),
+      wishRefreshBtn=document.getElementById("wishRefreshBtn");
+  function sayWish(html,isErr){wishVb.classList.remove("hide");wishVb.className="verdictbar"+(isErr?" err":"");wishVb.innerHTML=html;}
+
+  var WISH=null; /* null = belum pernah dimuat; [] = beneran kosong */
+  var BUILD_TAG="build-0905b";
+  function setWishDebug(s){
+    try{
+      var el=document.getElementById("wishDebug");
+      if(el) el.textContent="diag["+BUILD_TAG+"]: "+s+" · "+new Date().toLocaleTimeString("id-ID");
+    }catch(e){}
+  }
+  function subscribeWishlist(){
+    setWishDebug("db tersambung, memanggil get()…");
+    var col=db.collection("wishlist");
+    col.get().then(function(snap){
+      setWishDebug("get() OK — "+snap.docs.length+" dokumen diterima");
+      if(WISH===null){ WISH=snap.docs.map(function(d){var o=Object.assign({},d.data()||{});o.id=d.id;return o;}); renderWishlist(); }
+    }).catch(function(e){
+      setWishDebug("get() GAGAL — kode: "+((e&&e.code)||"tidak diketahui"));
+    });
+    col.onSnapshot(function(snap){
+      try{
+        setWishDebug("onSnapshot OK — "+snap.docs.length+" dokumen"+(snap.metadata&&snap.metadata.fromCache?" (dari cache)":""));
+        WISH=snap.docs.map(function(d){var o=Object.assign({},d.data()||{});o.id=d.id;return o;});
+        setWishDebug("WISH terisi "+WISH.length+" — memanggil renderWishlist()…");
+        renderWishlist();
+      }catch(err){
+        setWishDebug("CRASH di onSnapshot — "+(err&&(err.message||String(err))));
+      }
+    },function(e){
+      setWishDebug("onSnapshot ERROR — kode: "+((e&&e.code)||"tidak diketahui"));
+      if(WISH===null){ WISH=[]; renderWishlist(); }
+    });
+  }
+  function renderWishlist(){
+    try{
+    var dot=document.getElementById("dotWish");
+    if(dot) dot.textContent=WISH?WISH.filter(function(w){return w.status!=="dibeli";}).length:"…";
+    var tag=document.getElementById("wishTag");
+    if(tag) tag.textContent=WISH&&WISH.length?WISH.length+" item":"—";
+    var box=document.getElementById("wishGroups");
+    if(!box){ setWishDebug("ERROR — elemen #wishGroups tidak ditemukan di halaman"); return; }
+    if(WISH===null){ box.innerHTML='<div class="void">memuat roadmap…</div>'; setWishDebug("render: memuat (WISH null)"); return; }
+    if(!WISH.length){ box.innerHTML='<div class="void">belum ada keinginan</div>'; setWishDebug("render: kosong (WISH.length 0)"); return; }
+    var active=WISH.filter(function(w){return w.status!=="dibeli";}).sort(function(a,b){return (a.rank||999)-(b.rank||999);});
+    var bought=WISH.filter(function(w){return w.status==="dibeli";});
+    var html="";
+    if(active.length){
+      html+='<div class="grouphead"><b>Roadmap</b> &middot; '+active.length+'</div><div class="list">'+
+        active.map(function(w,i){
+          return '<div class="idea-item"><div class="itxt">#'+(i+1)+' '+esc(w.name)+' <span style="color:var(--txt-3);font-weight:400">('+rp(w.price||0)+')</span></div>'+
+            '<div class="inote">'+(w.forRole==="istri"?"Keinginan Istri":"Keinginan Suami")+' — '+esc(w.reason||"")+(w.why?" · "+esc(w.why):"")+'</div>'+
+            '<div class="irow"><button class="x" data-wishbought="'+w.id+'" style="flex:1">Sudah Dibeli</button>'+
+            '<button class="x" data-wishdrop="'+w.id+'">×</button></div></div>';
+        }).join("")+'</div>';
+    }
+    if(bought.length){
+      html+='<div class="grouphead"><b>Sudah Dibeli</b> &middot; '+bought.length+'</div><div class="list">'+
+        bought.map(function(w){
+          return '<div class="idea-item"><div class="itxt">'+esc(w.name)+' <span style="color:var(--txt-3);font-weight:400">('+rp(w.price||0)+')</span></div>'+
+            '<div class="inote">'+(w.forRole==="istri"?"Keinginan Istri":"Keinginan Suami")+'</div>'+
+            '<div class="irow"><button class="x" data-wishdrop="'+w.id+'" style="flex:1">Hapus</button></div></div>';
+        }).join("")+'</div>';
+    }
+    box.innerHTML=html;
+    setWishDebug("render OK — "+active.length+" aktif, HTML "+html.length+" karakter ditulis ke DOM");
+    }catch(err){
+      setWishDebug("RENDER ERROR — "+(err&&(err.message||String(err))));
+    }
+  }
+
+  function localRankWishlist(active,noteSuffix){
+    var sorted=active.slice().sort(function(a,b){
+      var ra=RE1.test(a.reason||"")?0:1, rb=RE1.test(b.reason||"")?0:1;
+      if(ra!==rb) return ra-rb;
+      return (a.addedAt||0)-(b.addedAt||0);
+    });
+    sorted.forEach(function(w,i){
+      if(!db) return;
+      db.collection("wishlist").doc(w.id).update({
+        rank:i+1,
+        why:"Diurutkan otomatis"+(noteSuffix?" ("+noteSuffix+")":"")+" — belum dinilai Claude."
+      }).catch(function(){});
+    });
+  }
+
+  function reorderWishlist(cb){
+    var active=(WISH||[]).filter(function(w){return w.status!=="dibeli";});
+    if(!active.length){ if(cb) cb(true); return; }
+    if(!sampler){
+      localRankWishlist(active,"Claude tidak tersedia");
+      if(cb) cb(false);
+      return;
+    }
+    if(wishRefreshBtn) wishRefreshBtn.disabled=true;
+    var saldoSaving=0;
+    TX.forEach(function(t){ if(t.jenis==="saving") saldoSaving += t.arah==="tarik"?-t.amount:t.amount; });
+    sampler.json(
+      "Kamu membantu pasangan suami-istri menyusun roadmap prioritas belanja keinginan mereka. Sekarang "+
+      new Date().toLocaleDateString("id-ID",{weekday:"long",day:"numeric",month:"long",year:"numeric"})+". "+
+      "Saldo tabungan (saving) saat ini sekitar "+rp(saldoSaving)+".\n\n"+
+      "Daftar keinginan aktif (idx = posisi item ini di daftar, mulai dari 0, WAJIB dipakai apa adanya untuk membalas — jangan diubah):\n"+JSON.stringify(active.map(function(w,i){
+        return {idx:i,nama:w.name,harga:w.price,untuk:w.forRole==="istri"?"istri":"suami",alasan:w.reason};
+      }))+"\n\n"+
+      "Untuk SETIAP dari "+active.length+" item di atas tentukan rank (urutan roadmap beli, 1=paling prioritas dibeli duluan, tidak boleh sama) berdasarkan urgensi & kepentingan alasannya — bukan urutan penambahan atau siapa yang menambahkan (adil untuk suami maupun istri). Item baru boleh melompat ke depan item lama kalau memang lebih penting.\n\n"+
+      "PENTING: balas idx sebagai angka indeks dari daftar di atas persis seperti yang diberikan (BUKAN nama barang, BUKAN id lain), dan sertakan SEMUA "+active.length+" item.\n\n"+
+      'Balas hanya JSON: {"urutan":[{"idx":0,"rank":1,"alasan":"maks 15 kata kenapa di posisi ini"}]}',
+      {modelTier:"default",cache:false}
+    ).then(function(o){
+      var arr=(o&&o.urutan)||[];
+      var applied=0;
+      arr.forEach(function(v){
+        var w=active[+v.idx];
+        if(!w||!db) return;
+        applied++;
+        db.collection("wishlist").doc(w.id).update({
+          rank:isFinite(+v.rank)?+v.rank:w.rank,
+          why:String(v.alasan||"").slice(0,160)
+        }).catch(function(){});
+      });
+      if(wishRefreshBtn) wishRefreshBtn.disabled=false;
+      if(!applied){ localRankWishlist(active,"jawaban Claude tidak cocok dengan daftar"); if(cb) cb(false); return; }
+      if(cb) cb(true);
+    }).catch(function(e){
+      localRankWishlist(active,(e&&e.code)?errMsg(e.code):"gangguan sementara");
+      if(wishRefreshBtn) wishRefreshBtn.disabled=false;
+      if(cb) cb(false,e&&e.code);
+    });
+  }
+
+  wishAddBtn.addEventListener("click",function(){
+    var name=wishName.value.trim(), price=toNumber(wishPrice.value), reason=wishReason.value.trim();
+    if(!name){wishName.focus();return;}
+    if(!reason){wishReason.focus();sayWish("Alasan wajib diisi supaya Claude bisa menilai prioritasnya.",true);return;}
+    if(!db){sayWish("Belum terhubung ke penyimpanan bersama.",true);return;}
+    wishAddBtn.disabled=true;
+    db.collection("wishlist").add({
+      name:name,price:price,reason:reason,forRole:wishFor.value,
+      status:"belum",rank:(WISH?WISH.length:0)+1,why:"",addedAt:Date.now(),addedByRole:ROLE
+    }).then(function(){
+      wishName.value="";wishPrice.value="";wishReason.value="";
+      sayWish('<span class="think"></span>Ditambahkan — Claude menyusun ulang roadmap…');
+      reorderWishlist(function(ok){
+        sayWish(ok?"<b>Roadmap diperbarui oleh Claude.</b>":"<b>Ditambahkan.</b> Roadmap diurutkan otomatis — Claude belum sempat menilai, klik \"Susun Ulang Roadmap dengan Claude\" untuk coba lagi.",!ok);
+      });
+    }).catch(function(){sayWish("Gagal menambahkan.",true);}).finally(function(){wishAddBtn.disabled=false;});
+  });
+  wishRefreshBtn.addEventListener("click",function(){
+    sayWish('<span class="think"></span>Claude menyusun ulang roadmap…');
+    reorderWishlist(function(ok,code){
+      sayWish(ok?"<b>Roadmap disusun ulang oleh Claude.</b>":("Roadmap diurutkan otomatis. "+(code?esc(errMsg(code)):"Claude tidak tersedia — coba lagi sebentar.")),!ok);
+    });
+  });
+  document.getElementById("wishGroups").addEventListener("click",function(e){
+    var b=e.target.closest("[data-wishbought]"), d=e.target.closest("[data-wishdrop]");
+    if(b&&db){ db.collection("wishlist").doc(b.getAttribute("data-wishbought")).update({status:"dibeli"}).catch(function(){}); return; }
+    if(d&&db){ db.collection("wishlist").doc(d.getAttribute("data-wishdrop")).delete().catch(function(){}); return; }
+  });
+
+  /* ---------- sedang apa (presence bersama, dengan foto) ---------- */
+  var PRESENCE={suami:null,istri:null};
+  var presenceEl=document.getElementById("presenceWidget");
+  function subscribePresence(){
+    ["suami","istri"].forEach(function(r){
+      var ref=db.doc("presence/"+r);
+      ref.get().then(function(snap){
+        PRESENCE[r]=snap.exists?snap.data():null;
+        renderPresence();
+      }).catch(function(){});
+      ref.onSnapshot(function(snap){
+        PRESENCE[r]=snap.exists?snap.data():null;
+        renderPresence();
+      },function(){});
+    });
+  }
+  function relTime(ts){
+    var mins=Math.max(0,Math.round((Date.now()-ts)/60000));
+    if(mins<1) return "baru saja";
+    if(mins<60) return mins+" menit lalu";
+    var h=Math.floor(mins/60);
+    if(h<24) return h+" jam lalu";
+    return Math.floor(h/24)+" hari lalu";
+  }
+  function renderPresence(){
+    var box=document.getElementById("presenceBody");
+    if(!box) return;
+    box.innerHTML=["suami","istri"].map(function(r){
+      var p=PRESENCE[r];
+      var label=r==="suami"?"Suami":"Istri";
+      var photo=p&&p.photo?('<img class="pthumb" src="'+p.photo+'">'):('<div class="pthumb">'+(r==="suami"?"👨":"👩")+'</div>');
+      var act=p&&p.activity?esc(p.activity):"belum ada status";
+      var when=p&&p.updatedAt?relTime(p.updatedAt):"";
+      return '<div class="prow">'+photo+'<div class="pinfo"><div class="pname">'+label+'</div>'+
+        '<div class="pact">'+act+'</div>'+(when?'<div class="pwhen">'+when+'</div>':'')+'</div></div>';
+    }).join("");
+  }
+  document.getElementById("presenceHead").addEventListener("click",function(){
+    presenceEl.classList.toggle("min");
+    try{localStorage.setItem("dayops.presence.min",presenceEl.classList.contains("min")?"1":"0");}catch(e){}
+  });
+
+  function currentActivityText(){
+    if(S.coffeeAt==null) return "";
+    var n=nowMin();
+    if(n<S.coffeeAt+S.prep) return "Persiapan pagi";
+    var r=plan();
+    if(!r.started) return "";
+    var pend=r.blocks.filter(function(b){return b.kind==="task"&&!b.done;});
+    return pend.length?pend[0].name:"";
+  }
+
+  function compressImage(file,cb){
+    var reader=new FileReader();
+    reader.onload=function(e){
+      var img=new Image();
+      img.onload=function(){
+        var size=200;
+        var scale=Math.min(1,size/Math.max(img.width,img.height));
+        var canvas=document.createElement("canvas");
+        canvas.width=Math.max(1,Math.round(img.width*scale));
+        canvas.height=Math.max(1,Math.round(img.height*scale));
+        var ctx=canvas.getContext("2d");
+        ctx.drawImage(img,0,0,canvas.width,canvas.height);
+        try{cb(canvas.toDataURL("image/jpeg",0.6));}catch(err){cb(null);}
+      };
+      img.onerror=function(){cb(null);};
+      img.src=e.target.result;
+    };
+    reader.onerror=function(){cb(null);};
+    reader.readAsDataURL(file);
+  }
+
+  var statusModal=document.getElementById("statusModal"), statusActivity=document.getElementById("statusActivity"),
+      statusPhotoInput=document.getElementById("statusPhotoInput"), statusPreview=document.getElementById("statusPreview"),
+      statusSaveBtn=document.getElementById("statusSaveBtn"), statusCancelBtn=document.getElementById("statusCancelBtn");
+  var pendingPhoto=null;
+
+  document.getElementById("presenceUpdateBtn").addEventListener("click",function(){
+    statusActivity.value=currentActivityText();
+    pendingPhoto=(PRESENCE[ROLE]&&PRESENCE[ROLE].photo)||null;
+    statusPreview.src=pendingPhoto||"";
+    statusPreview.style.display=pendingPhoto?"block":"none";
+    statusModal.classList.remove("hide");
+    statusActivity.focus();
+  });
+  statusCancelBtn.addEventListener("click",function(){statusModal.classList.add("hide");});
+  statusPhotoInput.addEventListener("change",function(){
+    var f=statusPhotoInput.files&&statusPhotoInput.files[0];
+    if(!f) return;
+    compressImage(f,function(url){
+      if(url){pendingPhoto=url;statusPreview.src=url;statusPreview.style.display="block";}
+    });
+  });
+  statusSaveBtn.addEventListener("click",function(){
+    var activity=statusActivity.value.trim();
+    if(!db){statusModal.classList.add("hide");return;}
+    statusSaveBtn.disabled=true;
+    db.doc("presence/"+ROLE).set({activity:activity,photo:pendingPhoto,updatedAt:Date.now()})
+      .then(function(){statusModal.classList.add("hide");})
+      .catch(function(){})
+      .finally(function(){statusSaveBtn.disabled=false;});
+  });
+
+  /* ---------- antrean ---------- */
+  var nameEl=document.getElementById("tName"),
+      prioEl=document.getElementById("tPrio"), atEl=document.getElementById("tAt"),
+      addBtn=document.getElementById("addBtn");
+
+  function report(t,src,code){
+    var pos=plan().log.filter(function(e){return e.n===t.name;})[0];
+    var where=pos?pos.w:"";
+    var by=src==="claude"?"Claude menaksir":src==="lokal"?"Ditaksir aturan lokal":"Kamu menetapkan";
+    say("<b>"+by+" “"+esc(t.name)+"” sebagai "+t.p+" · "+dur(t.mins)+".</b> "+esc(t.why)+
+        (where?" <span style='color:var(--txt-3)'>"+esc(where)+"</span>":"")+
+        (code?" <span style='color:var(--txt-3)'>("+esc(errMsg(code))+")</span>":""));
+  }
+
+  function add(){
+    if(S.dayEnded){say("Hari sudah ditutup — klik <b>Lanjutkan Hari Ini</b> untuk mengedit lagi.",true);return;}
+    var n=nameEl.value.trim();
+    if(!n){nameEl.focus();return;}
+    var at=null;
+    if(atEl.value){var q=atEl.value.split(":");at=(+q[0])*60+(+q[1]);}
+    var manualP=prioEl.value==="AUTO"?null:prioEl.value;
+    var t={id:Date.now(),name:n,mins:null,p:manualP,at:at,why:"",done:false,doneAt:null};
+    S.tasks.push(t);
+    nameEl.value="";atEl.value="";nameEl.focus();
+
+    addBtn.disabled=true;
+    say('<span class="think"></span>'+(sampler?"Claude":"Aturan lokal")+' menaksir durasi'+(manualP?"":" & prioritas")+' “'+esc(t.name)+'”…');
+    draw();
+    triage(t,function(src,code){addBtn.disabled=false;draw();report(t,src,code);});
+  }
+  addBtn.addEventListener("click",add);
+  nameEl.addEventListener("keydown",function(e){if(e.key==="Enter")add();});
+
+  var postponeBox=document.getElementById("postponeBox"), ppName=document.getElementById("ppName"),
+      ppReason=document.getElementById("ppReason"), ppCancelBtn=document.getElementById("ppCancelBtn"),
+      ppSubmitBtn=document.getElementById("ppSubmitBtn");
+  var ppTaskId=null;
+
+  document.getElementById("list").addEventListener("click",function(e){
+    var d=e.target.closest("[data-del]"), c=e.target.closest("[data-cyc]"), p=e.target.closest("[data-postpone]");
+    if(d){S.tasks=S.tasks.filter(function(t){return t.id!==+d.getAttribute("data-del");});hush();draw();return;}
+    if(c){
+      if(S.dayEnded){say("Hari sudah ditutup — klik <b>Lanjutkan Hari Ini</b> untuk mengedit lagi.",true);return;}
+      var t=S.tasks.filter(function(x){return x.id===+c.getAttribute("data-cyc");})[0];
+      if(!t||t.p==null) return;
+      t.p=t.p==="P1"?"P2":t.p==="P2"?"P3":"P1";
+      delete t.curfewDeferred;
+      draw(); report(t,"manual");
+      return;
+    }
+    if(p){
+      if(S.dayEnded){say("Hari sudah ditutup — klik <b>Lanjutkan Hari Ini</b> untuk mengedit lagi.",true);return;}
+      var t2=S.tasks.filter(function(x){return x.id===+p.getAttribute("data-postpone");})[0];
+      if(!t2) return;
+      ppTaskId=t2.id; ppName.textContent=t2.name; ppReason.value="";
+      postponeBox.classList.remove("hide"); ppReason.focus();
+    }
+  });
+  ppCancelBtn.addEventListener("click",function(){postponeBox.classList.add("hide");ppTaskId=null;});
+  ppSubmitBtn.addEventListener("click",function(){
+    var reason=ppReason.value.trim();
+    if(!reason){ppReason.focus();return;}
+    if(ppTaskId==null) return;
+    var idx=-1;
+    for(var i=0;i<S.tasks.length;i++){ if(S.tasks[i].id===ppTaskId){ idx=i; break; } }
+    if(idx<0){postponeBox.classList.add("hide");ppTaskId=null;return;}
+    var t=S.tasks[idx];
+    S.tasks.splice(idx,1);
+    postponeBox.classList.add("hide"); ppTaskId=null;
+    pushBacklog({name:t.name,mins:t.mins,why:reason,source:"tunda"});
+    draw();
+    say('<span class="think"></span>Ditunda — Claude menjadwalkan ulang…');
+    reorderBacklog(function(){
+      say("<b>“"+esc(t.name)+"” ditunda ke backlog.</b> "+esc(reason)+" <span style='color:var(--txt-3)'>Lihat tab Nanti.</span>");
+    });
+  });
+
+  railEl.addEventListener("click",function(e){
+    var cb=e.target.closest("[data-check]");
+    if(!cb) return;
+    if(S.dayEnded){say("Hari sudah ditutup — klik <b>Lanjutkan Hari Ini</b> untuk mengedit lagi.",true);return;}
+    var id=+cb.getAttribute("data-check");
+    var t=S.tasks.filter(function(x){return x.id===id;})[0];
+    if(!t) return;
+    if(t.done){t.done=false;t.doneAt=null;}
+    else{t.done=true;t.doneAt=nowMin();}
+    draw();
+  });
+
+  /* ---------- tutup hari ---------- */
+  function renderRest(){
+    restTag.textContent=S.dayEnded?("Ditutup "+hhmm(S.endedAt)):"Belum";
+    restIdle.style.display=S.dayEnded?"none":"block";
+    restDone.style.display=S.dayEnded?"block":"none";
+    if(!S.dayEnded) return;
+    var doneList=S.tasks.filter(function(t){return t.done;});
+    var carried=S.tomorrow||[];
+    document.getElementById("restStats").innerHTML=
+      '<div class="stat"><b>'+doneList.length+'</b>selesai hari ini</div>'+
+      '<div class="stat"><b>'+carried.length+'</b>dibawa ke besok</div>'+
+      '<div class="stat"><b>'+hhmm(S.endedAt)+'</b>waktu tutup</div>';
+    document.getElementById("restNote").textContent=S.dayNote||"Hari ditutup.";
+    var tb=document.getElementById("tomorrowList");
+    tb.innerHTML=carried.length?carried.map(function(b){
+      var p=String(b.p||b.prioritas||"P2").toUpperCase();
+      if(p!=="P1"&&p!=="P2"&&p!=="P3") p="P2";
+      return '<div class="li" data-p="'+p+'"><div class="bar"></div>'+
+        '<div class="nm">'+esc(b.nama||b.name||"")+'</div><span class="chip '+p+'">'+p+'</span></div>';
+    }).join(""):'<div class="void">tidak ada carry-over</div>';
+  }
+
+  function endDay(){
+    if(S.dayEnded) return;
+    var doneList=S.tasks.filter(function(t){return t.done;});
+    var pendingList=S.tasks.filter(function(t){return !t.done&&t.p!=="P3";});
+    var backlog=S.tasks.filter(function(t){return t.p==="P3";});
+    S.dayEnded=true; S.endedAt=Math.floor(nowMin());
+
+    function finish(note,besok){
+      S.dayNote=note; S.tomorrow=besok||[];
+      try{
+        localStorage.setItem(keyFor(CARRY_KEY),JSON.stringify({
+          tasks:S.tomorrow.map(function(b){
+            return {name:b.nama||b.name||"Kegiatan",mins:Math.max(5,+b.mins||60),
+              p:(b.p||b.prioritas||"P2"),why:b.alasan||b.why||""};
+          }),
+          note:note
+        }));
+      }catch(e){}
+      S.tomorrow.forEach(function(b){
+        pushBacklog({
+          name:b.nama||b.name||"Kegiatan",
+          mins:Math.max(5,+b.mins||60),
+          why:b.alasan||b.why||"Tidak selesai hari ini.",
+          source:"carry"
+        });
+      });
+      restMsg.classList.add("hide");
+      draw();
+      if(S.tomorrow.length) reorderBacklog();
+    }
+
+    if(!sampler){
+      var localNote=doneList.length
+        ?("Hari ini "+doneList.length+" kegiatan selesai. Istirahat yang cukup.")
+        :"Belum ada kegiatan yang selesai hari ini. Coba mulai lebih awal besok.";
+      var besokLocal=pendingList.concat(backlog).map(function(t){
+        return {nama:t.name,mins:t.mins,p:t.p,alasan:"Dibawa dari hari sebelumnya, belum sempat dikerjakan."};
+      });
+      finish(localNote,besokLocal);
+      return;
+    }
+
+    restBtn.disabled=true;
+    sayRest('<span class="think"></span>Claude sedang meninjau hari ini…');
+
+    var payload={
+      selesai:doneList.map(function(t){return {nama:t.name,menit_rencana:t.mins,selesai_pukul:hhmm(t.doneAt)};}),
+      belum_selesai:pendingList.map(function(t){return {nama:t.name,menit:t.mins,prioritas:t.p};}),
+      ditunda:backlog.map(function(t){return {nama:t.name,menit:t.mins};})
+    };
+
+    sampler.json(
+      "Kamu meninjau hari kerja seseorang dan menyiapkan rencana besok. "+
+      "Sekarang pukul "+hhmm(nowMin())+", dia menandai harinya selesai (istirahat).\n\n"+
+      "Data hari ini: "+JSON.stringify(payload)+"\n\n"+
+      "Buat: 1) ringkasan singkat (maks 2 kalimat bahasa Indonesia, jujur dan menyemangati, bukan basa-basi kosong) "+
+      "tentang progres hari ini. 2) daftar rencana besok dari kegiatan yang belum selesai dan yang ditunda — "+
+      "urutkan ulang prioritasnya (P1/P2/P3) untuk besok dan perkirakan ulang durasinya dalam menit, boleh gabungkan atau buang yang tidak relevan lagi.\n\n"+
+      'Balas hanya JSON: {"ringkasan":"...","besok":[{"nama":"...","mins":60,"p":"P1|P2|P3","alasan":"maks 15 kata"}]}',
+      {modelTier:"default",cache:false}
+    ).then(function(o){
+      finish(String(o&&o.ringkasan||"Hari ini ditutup."), Array.isArray(o&&o.besok)?o.besok:[]);
+    }).catch(function(e){
+      sayRest(errMsg(e&&e.code),true);
+      var besokLocal=pendingList.concat(backlog).map(function(t){
+        return {nama:t.name,mins:t.mins,p:t.p,alasan:"Dibawa dari hari sebelumnya."};
+      });
+      finish("Hari ini ditutup. ("+doneList.length+" kegiatan selesai.)",besokLocal);
+    }).finally(function(){restBtn.disabled=false;});
+  }
+  restBtn.addEventListener("click",endDay);
+  resumeBtn.addEventListener("click",function(){S.dayEnded=false;S.endedAt=null;draw();});
+
+  /* ---------- reset ---------- */
+  function armReset(btn,label,cb){
+    var armed=false, timer=null;
+    btn.addEventListener("click",function(e){
+      if(!armed){
+        armed=true; e.target.textContent="Yakin? Klik Lagi";
+        timer=setTimeout(function(){armed=false;e.target.textContent=label;},3000);
+        return;
+      }
+      clearTimeout(timer); armed=false; e.target.textContent=label;
+      cb();
+    });
+  }
+  armReset(document.getElementById("resetScheduleBtn"),"Reset Jadwal",function(){
+    S.coffeeAt=null;
+    S.tasks.forEach(function(t){t.done=false;t.doneAt=null;});
+    S.dayEnded=false; S.endedAt=null; S.dayNote=""; S.tomorrow=[]; S.disruptions=[];
+    try{localStorage.removeItem(keyFor(CARRY_KEY));}catch(e){}
+    syncMorning(); hush(); draw(); selectTab("mulai");
+  });
+  armReset(document.getElementById("resetAllBtn"),"Reset Semua",function(){
+    try{localStorage.removeItem(keyFor(KEY));localStorage.removeItem(keyFor(CARRY_KEY));localStorage.removeItem(keyFor(BACKLOG_KEY));}catch(err){}
+    S={coffeeAt:null,prep:120,buffer:15,tasks:[],dayEnded:false,endedAt:null,dayNote:"",tomorrow:[],disruptions:[]};
+    BACKLOG=[];
+    syncMorning(); hush(); renderBacklog(); draw(); selectTab("mulai");
+  });
+
+  /* ---------- peran (suami/istri) & boot ---------- */
+  var loginGate=document.getElementById("loginGate");
+  var roleBadge=document.getElementById("roleBadge"), switchRoleBtn=document.getElementById("switchRoleBtn");
+
+  function applyRoleTheme(){
+    document.documentElement.setAttribute("data-role",ROLE||"");
+    if(roleBadge) roleBadge.textContent=ROLE==="istri"?"ISTRI":"SUAMI";
+  }
+
+  function migrateLegacy(role){
+    try{
+      if(localStorage.getItem("dayops.migrated")) return;
+      var legacy=localStorage.getItem(KEY);
+      if(legacy&&!localStorage.getItem(KEY+"."+role)) localStorage.setItem(KEY+"."+role,legacy);
+      var lc=localStorage.getItem(CARRY_KEY);
+      if(lc&&!localStorage.getItem(CARRY_KEY+"."+role)) localStorage.setItem(CARRY_KEY+"."+role,lc);
+      var lb=localStorage.getItem(BACKLOG_KEY);
+      if(lb&&!localStorage.getItem(BACKLOG_KEY+"."+role)) localStorage.setItem(BACKLOG_KEY+"."+role,lb);
+      localStorage.setItem("dayops.migrated","1");
+    }catch(e){}
+  }
+
+  function initApp(){
+    applyRoleTheme();
+    loadBacklog();
+    if(!load()) S={coffeeAt:null,prep:120,buffer:15,tasks:[],dayEnded:false,endedAt:null,dayNote:"",tomorrow:[],disruptions:[]};
+    renderBacklog();
+    syncMorning(); draw(); selectTab(S.coffeeAt==null?"mulai":"antrean");
+    setInterval(tick,1000);
+    window.addEventListener("resize",tick);
+
+    var savedView=null; try{savedView=localStorage.getItem("dayops.view");}catch(e){}
+    selectView((savedView==="uang"||savedView==="ingin")?savedView:"hari");
+    syncTxFields();
+
+    var minPresence=null; try{minPresence=localStorage.getItem("dayops.presence.min");}catch(e){}
+    if(minPresence==="1"&&presenceEl) presenceEl.classList.add("min");
+
+    aiBtn.disabled=false;
+    sampler={json:aiJSON};
+
+    setWishDebug("menyambungkan ke Firebase…");
+    firebase.auth().signInAnonymously().then(function(){
+      db=firebase.firestore();
+      setWishDebug("db diperoleh, menyambungkan langganan…");
+      subscribePresence();
+      subscribeTx();
+      subscribeWishlist();
+    }).catch(function(e){
+      setWishDebug("Firebase GAGAL — "+((e&&(e.code||e.message))||"tidak diketahui"));
+    });
+  }
+
+  document.querySelectorAll(".rolebtn").forEach(function(b){
+    b.addEventListener("click",function(){
+      ROLE=b.getAttribute("data-role");
+      try{localStorage.setItem("dayops.role",ROLE);}catch(e){}
+      migrateLegacy(ROLE);
+      loginGate.classList.add("hide");
+      initApp();
+    });
+  });
+  if(switchRoleBtn) switchRoleBtn.addEventListener("click",function(){
+    try{localStorage.removeItem("dayops.role");}catch(e){}
+    location.reload();
+  });
+
+  function afterUnlock(){
+    try{ROLE=localStorage.getItem("dayops.role");}catch(e){ROLE=null;}
+    if(ROLE==="suami"||ROLE==="istri"){
+      loginGate.classList.add("hide");
+      initApp();
+    } else {
+      loginGate.classList.remove("hide");
+    }
+  }
+
+  /* ---------- gerbang PIN ---------- */
+  var PIN_HASH="03ac674216f3e15c761ee1a5e255f067953623c8b388b4459e13f978d7c846f4"; /* PIN sementara: 1234 — GANTI sebelum dipakai beneran */
+  var pinGate=document.getElementById("pinGate"), pinInput=document.getElementById("pinInput"),
+      pinSubmitBtn=document.getElementById("pinSubmitBtn"), pinVb=document.getElementById("pinVb");
+
+  function sha256Hex(str){
+    if(!(window.crypto&&window.crypto.subtle)) return Promise.reject(new Error("no_subtle"));
+    return crypto.subtle.digest("SHA-256",new TextEncoder().encode(str)).then(function(buf){
+      return Array.prototype.map.call(new Uint8Array(buf),function(b){return b.toString(16).padStart(2,"0");}).join("");
+    });
+  }
+  function unlockWithToken(token){
+    AUTH_TOKEN=token;
+    try{localStorage.setItem("dayops.authtoken",token);}catch(e){}
+    pinGate.classList.add("hide");
+    afterUnlock();
+  }
+  pinSubmitBtn.addEventListener("click",function(){
+    var v=(pinInput.value||"").trim();
+    if(!v) return;
+    pinSubmitBtn.disabled=true;
+    sha256Hex(v).then(function(h){
+      pinSubmitBtn.disabled=false;
+      if(h===PIN_HASH){ unlockWithToken(h); }
+      else {
+        pinVb.classList.remove("hide"); pinVb.className="verdictbar err"; pinVb.textContent="PIN salah, coba lagi.";
+        pinInput.value=""; pinInput.focus();
+      }
+    }).catch(function(){
+      pinSubmitBtn.disabled=false;
+      pinVb.classList.remove("hide"); pinVb.className="verdictbar err";
+      pinVb.textContent="Browser ini tidak bisa memeriksa PIN dengan aman (butuh koneksi https://). Coba buka lewat link live-nya.";
+    });
+  });
+  pinInput.addEventListener("keydown",function(e){if(e.key==="Enter")pinSubmitBtn.click();});
+
+  var savedToken=null; try{savedToken=localStorage.getItem("dayops.authtoken");}catch(e){}
+  if(savedToken===PIN_HASH){
+    unlockWithToken(savedToken);
+  } else {
+    pinInput.focus();
+  }
+})();
+</script>
+
+</body></html>
